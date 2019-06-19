@@ -20,22 +20,26 @@ type JWT struct {
 func NewJWT(key *rsa.PublicKey) *JWT {
 	claims := jwt.MapClaims{}
 	opt := request.WithClaims(claims)
-	fn := func(*jwt.Token) (interface{}, error) { return key, nil }
+	fn := func(t *jwt.Token) (interface{}, error) {
+		_, ok := claims["exp"]
+		if !ok {
+			return nil, errors.New("Jwt token expiration not valid")
+		}
+		return key, nil
+	}
 	ext := request.AuthorizationHeaderExtractor
 	return &JWT{ext, fn, []request.ParseFromRequestOption{opt}, claims}
 }
 
 func (j JWT) Verify(r *http.Request) error {
-	jwt, err := request.ParseFromRequest(r,
+	t, err := request.ParseFromRequest(r,
 		j.extractor, j.keyFunc, j.options...)
 	if err != nil {
 		return err
 	}
-
-	if !jwt.Valid {
-		return errors.New("JWT token is not valid")
+	if !t.Valid {
+		return errors.New("Jwt token is not valid")
 	}
-
 	return nil
 }
 
@@ -44,9 +48,9 @@ func (j JWT) Extract() (permission.Permissions, error) {
 	if !ok {
 		return 0, errors.New("No permission found in the jwt token")
 	}
-	v, ok := p.(permission.Permissions)
-	if !ok {
-		return v, errors.New("Invalid permissions value format")
+	v := permission.Permissions(p.(float64))
+	if !v.Valid() {
+		return v, errors.New("Invalid permissions value, value not supported")
 	}
 	return v, nil
 }

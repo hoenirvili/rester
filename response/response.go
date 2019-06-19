@@ -18,7 +18,7 @@ func (e Error) MarshalJSON() ([]byte, error) {
 	if str == "" {
 		return nil, &json.MarshalerError{
 			Type: reflect.TypeOf(e),
-			Err:  errors.New("response: cannot marshal an empty error"),
+			Err:  errors.New("response: Cannot marshal an empty error"),
 		}
 	}
 
@@ -49,20 +49,21 @@ func (r Response) Render(w http.ResponseWriter) {
 		r.StatusCode = http.StatusOK
 	}
 
-	w.WriteHeader(r.StatusCode)
-
 	switch {
 	case r.Error != EmptyError:
 		payload = r.Error
+		r.StatusCode = http.StatusInternalServerError
 	default:
 		payload = r.Payload
 	}
+
+	w.WriteHeader(r.StatusCode)
 
 	if payload == nil {
 		return
 	}
 
-	json.NewEncoder(w).Encode(payload)
+	_ = json.NewEncoder(w).Encode(payload)
 }
 
 // Ok returns an empty status ok response
