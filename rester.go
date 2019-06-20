@@ -63,6 +63,7 @@ func (r *Rester) addMiddlewares() {
 
 }
 
+// guard return true if the permission on is set in
 func guard(in permission.Permissions, on permission.Permissions) bool {
 	return in&on != 0
 }
@@ -74,6 +75,7 @@ type Option func(opt *Options)
 // Options type holding all underlying options for the
 // rester api
 type Options struct {
+	// validator used for token validation and extraction
 	validator TokenValidator
 }
 
