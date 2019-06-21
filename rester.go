@@ -44,23 +44,23 @@ func (r *Rester) addMiddlewares() {
 	r.r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if err := r.o.validator.Verify(req); err != nil {
-				resp := response.Err(err.Error())
+				resp := response.Unauthorized(err.Error())
 				resp.Render(w)
 				return
 			}
 
 			permissions, err := r.o.validator.Extract()
 			if err != nil {
-				resp := response.Err(err.Error())
+				resp := response.Unauthorized(err.Error())
 				resp.Render(w)
 				return
 			}
 
-			req = req.WithContext(context.WithValue(req.Context(), "permissions", permissions))
+			ctx := context.WithValue(req.Context(), "permissions", permissions)
+			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)
 		})
 	})
-
 }
 
 // guard return true if the permission on is set in
@@ -126,7 +126,8 @@ func (r *Rester) Resource(base string, router Resource) {
 		handler := handler.HandlerFunc(func(req request.Request) resource.Response {
 			in := req.Request.Context().Value("permission").(permission.Permissions)
 			if !guard(in, route.Allow) {
-				return response.Unauthorized("you don't have permission to access this resource")
+				return response.Unauthorized(
+					"you don't have permission to access this resource")
 			}
 			return route.Handler(req)
 		})
