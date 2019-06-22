@@ -1,4 +1,6 @@
 # rester
+[![GoDoc](https://godoc.org/github.com/hoenirvili/rester?status.svg)](https://godoc.org/github.com/hoenirvili/rester)
+
 An Opinionated library for building REST APIs in Go.
 
 
