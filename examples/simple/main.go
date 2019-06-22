@@ -1,11 +1,3 @@
-# rester
-An Opinionated library for building REST APIs in Go.
-
-
-# Simple rest resource with one method without checking the permissions
-
-```go
-
 package main
 
 import (
@@ -43,5 +35,3 @@ func main() {
 		panic(err)
 	}
 }
-
-```

@@ -137,6 +137,16 @@ func checkPermission(allow permission.Permissions, req request.Request) error {
 	return nil
 }
 
+func (r *Rester) validRoute(route route.Route) {
+	if route.Handler == nil {
+		panic("Cannot use a nil handler")
+	}
+
+	if route.URL == "" {
+		panic("Cannot use an empty URL route")
+	}
+}
+
 // Resource initializes a resource with the all available sub-routes of the resource
 func (r *Rester) Resource(base string, router Resource) {
 	isRequestAllowed := func(allow permission.Permissions, req request.Request) error {
@@ -148,6 +158,12 @@ func (r *Rester) Resource(base string, router Resource) {
 	}
 
 	for _, route := range router.Routes() {
+		r.validRoute(route)
+
+		if route.Allow == 0 {
+			route.Allow = permission.Anonymous
+		}
+
 		handler := handler.HttpHandlerFunc(func(req request.Request) resource.Response {
 			if err := isRequestAllowed(route.Allow, req); err != nil {
 				return response.Unauthorized(err.Error())
