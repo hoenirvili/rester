@@ -9,7 +9,7 @@ const (
 	Super
 )
 
-var supportedPermission = [...]Permissions{
+var supportedPermission = []Permissions{
 	Anonymous, Basic, Admin, Super,
 }
 
@@ -21,4 +21,10 @@ func (p Permissions) Valid() bool {
 		}
 	}
 	return false
+}
+
+// Append appends a new permission in the underlying supported permissions
+// The newly permission added now can be used in the route guard API
+func Append(p Permissions) {
+	supportedPermission = append(supportedPermission, p)
 }
