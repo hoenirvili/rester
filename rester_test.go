@@ -1,7 +1,7 @@
 package rester_test
 
 import (
-	"io/ioutil"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -54,13 +54,14 @@ type resterSuite struct {
 }
 
 var header = http.Header{
-	"testkey": []string{"testvalue"},
+	"Testkey": []string{"Testvalue"},
 }
 
 func notfound(request.Request) resource.Response {
 	return &response.Response{
 		Headers:    header,
 		StatusCode: http.StatusNotFound,
+		Payload:    testpayload,
 	}
 }
 
@@ -68,11 +69,18 @@ func methodnotallowed(request.Request) resource.Response {
 	return &response.Response{
 		Headers:    header,
 		StatusCode: http.StatusMethodNotAllowed,
+		Payload:    testpayload,
 	}
 }
 
+type payload struct {
+	Message string `json:"message"`
+}
+
+var testpayload = payload{"test"}
+
 func index(request.Request) resource.Response {
-	return response.Ok()
+	return response.Response{Payload: &testpayload}
 }
 
 type testResource struct{}
@@ -80,15 +88,18 @@ type testResource struct{}
 func (t *testResource) Resource() route.Routes {
 	return route.Routes{{
 		Allow:   permission.Anonymous,
-		Method:  resource.Get,
-		URL:     "/",
+		Method:  resource.Post,
+		URL:     "/test",
 		Handler: index,
 	}}
 }
 
 func (r *resterSuite) SetupSuite() {
 	r.require = r.Require()
-	r.validator = &validator{}
+	r.validator = &validator{
+		permission: permission.Anonymous,
+	}
+
 	r.rester = rester.New(rester.WithTokenValidator(r.validator))
 	r.rester.NotFound(handler.Handler(notfound))
 	r.rester.MethodNotAllowed(handler.Handler(methodnotallowed))
@@ -103,25 +114,31 @@ func (r resterSuite) TestNotFound() {
 	r.require.NotEmpty(resp)
 	defer resp.Body.Close()
 
-	p, err := ioutil.ReadAll(resp.Body)
+	payload := payload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
 	r.require.NoError(err)
-	r.require.Empty(p)
+	r.require.Equal(testpayload, payload)
 	r.require.Equal(http.StatusNotFound, resp.StatusCode)
+	r.require.Contains(resp.Header, "Testkey")
+	r.require.Equal(header["Testkey"], resp.Header["Testkey"])
 }
 
 func (r resterSuite) TestMethodNotAllowed() {
 	server := httptest.NewServer(r.rester)
 	defer server.Close()
 
-	resp, err := http.Post(server.URL+"/", "", nil)
+	resp, err := http.Get(server.URL + "/test")
 	r.require.NoError(err)
 	r.require.NotEmpty(resp)
 	defer resp.Body.Close()
 
-	p, err := ioutil.ReadAll(resp.Body)
+	payload := payload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
 	r.require.NoError(err)
-	r.require.Empty(p)
+	r.require.Equal(testpayload, payload)
 	r.require.Equal(http.StatusMethodNotAllowed, resp.StatusCode)
+	r.require.Contains(resp.Header, "Testkey")
+	r.require.Equal(header["Testkey"], resp.Header["Testkey"])
 }
 
 func TestResterSuite(t *testing.T) {

@@ -15,7 +15,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response.Render(w)
 }
 
-func HandlerFunc(handler Handler) http.HandlerFunc {
+func HttpHandlerFunc(handler Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handler.ServeHTTP(w, r)
 	})

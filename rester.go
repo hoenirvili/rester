@@ -6,6 +6,7 @@ package rester
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -36,11 +37,15 @@ func New(opts ...Option) *Rester {
 		setter(&o)
 	}
 	r := &Rester{chi.NewRouter(), o}
-	r.addMiddlewares()
+	r.appendMiddlewares()
 	return r
 }
 
-func (r *Rester) addMiddlewares() {
+func (r *Rester) appendTokenMiddleware() {
+	if r.o.validator == nil {
+		return
+	}
+
 	r.r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if err := r.o.validator.Verify(req); err != nil {
@@ -61,6 +66,10 @@ func (r *Rester) addMiddlewares() {
 			next.ServeHTTP(w, req)
 		})
 	})
+}
+
+func (r *Rester) appendMiddlewares() {
+	r.appendTokenMiddleware()
 }
 
 // guard return true if the permission on is set in
@@ -100,13 +109,13 @@ func WithTokenValidator(t TokenValidator) Option {
 // NotFound defines a handler to respond whenever a route could
 // not be found
 func (r *Rester) NotFound(h handler.Handler) {
-	r.r.NotFound(handler.HandlerFunc(h))
+	r.r.NotFound(handler.HttpHandlerFunc(h))
 }
 
 // MethodNotAllowed defines a handler to respond whenever a method is
 // not allowed
 func (r *Rester) MethodNotAllowed(h handler.Handler) {
-	r.r.MethodNotAllowed(handler.HandlerFunc(h))
+	r.r.MethodNotAllowed(handler.HttpHandlerFunc(h))
 }
 
 // ServeHTTP based on the incoming request route it to the available resource handler
@@ -120,17 +129,32 @@ type Resource interface {
 	Routes() route.Routes
 }
 
+func checkPermission(allow permission.Permissions, req request.Request) error {
+	in := req.Request.Context().Value("permission").(permission.Permissions)
+	if !guard(in, allow) {
+		return errors.New("You don't have permission to access this resource")
+	}
+	return nil
+}
+
 // Resource initializes a resource with the all available sub-routes of the resource
 func (r *Rester) Resource(base string, router Resource) {
+	isRequestAllowed := func(allow permission.Permissions, req request.Request) error {
+		return nil
+	}
+
+	if r.o.validator != nil {
+		isRequestAllowed = checkPermission
+	}
+
 	for _, route := range router.Routes() {
-		handler := handler.HandlerFunc(func(req request.Request) resource.Response {
-			in := req.Request.Context().Value("permission").(permission.Permissions)
-			if !guard(in, route.Allow) {
-				return response.Unauthorized(
-					"you don't have permission to access this resource")
+		handler := handler.HttpHandlerFunc(func(req request.Request) resource.Response {
+			if err := isRequestAllowed(route.Allow, req); err != nil {
+				return response.Unauthorized(err.Error())
 			}
 			return route.Handler(req)
 		})
+
 		r.r.Method(route.Method, route.URL, handler)
 	}
 }

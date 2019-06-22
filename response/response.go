@@ -39,22 +39,25 @@ func (r Response) Render(w http.ResponseWriter) {
 	var payload interface{}
 
 	header := w.Header()
+	header.Add("Content-Type", "application/json")
 	for key, values := range r.Headers {
 		for _, value := range values {
 			header.Set(key, value)
 		}
 	}
 
-	if r.StatusCode == 0 {
-		r.StatusCode = http.StatusOK
-	}
-
 	switch {
 	case r.Error != EmptyError:
 		payload = r.Error
-		r.StatusCode = http.StatusInternalServerError
+		if r.StatusCode == 0 {
+			r.StatusCode = http.StatusInternalServerError
+		}
 	default:
 		payload = r.Payload
+	}
+
+	if r.StatusCode == 0 {
+		r.StatusCode = http.StatusOK
 	}
 
 	w.WriteHeader(r.StatusCode)
