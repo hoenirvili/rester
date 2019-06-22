@@ -1,7 +1,7 @@
 // Package rester used to define and compose http rest resources
 // The package offers tiny handy abstractions to construct your rest api in a friendly and
 // super mantainable way, yet to offer the flexibility required for a well more complex
-// solution.
+// solution
 package rester
 
 import (

@@ -85,9 +85,8 @@ func index(request.Request) resource.Response {
 
 type testResource struct{}
 
-func (t *testResource) Resource() route.Routes {
+func (t *testResource) Routes() route.Routes {
 	return route.Routes{{
-		Allow:   permission.Anonymous,
 		Method:  resource.Post,
 		URL:     "/test",
 		Handler: index,
@@ -103,6 +102,7 @@ func (r *resterSuite) SetupSuite() {
 	r.rester = rester.New(rester.WithTokenValidator(r.validator))
 	r.rester.NotFound(handler.Handler(notfound))
 	r.rester.MethodNotAllowed(handler.Handler(methodnotallowed))
+	r.rester.Resource("/", new(testResource))
 }
 
 func (r resterSuite) TestNotFound() {
