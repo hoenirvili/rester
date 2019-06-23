@@ -18,10 +18,13 @@ func jwt(r *require.Assertions) *token.JWT {
 	public, err := gojwt.ParseRSAPublicKeyFromPEM(pub)
 	r.NoError(err)
 	token := token.NewJWT(public)
+	r.NotEmpty(token)
+	return token
 }
 
 func TestVerifyToken(t *testing.T) {
 	require := require.New(t)
+	_ = require
 }
 
 // type jwtSuite struct {

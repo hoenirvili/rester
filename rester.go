@@ -129,6 +129,8 @@ type Resource interface {
 	Routes() route.Routes
 }
 
+// checkPermission checks if the value with the key permission exists and if
+// it passes the guard check
 func checkPermission(allow permission.Permissions, req request.Request) error {
 	in := req.Request.Context().Value("permission").(permission.Permissions)
 	if !guard(in, allow) {
