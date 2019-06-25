@@ -170,6 +170,8 @@ func (r *Rester) Resource(base string, router Resource) {
 			if err := isRequestAllowed(route.Allow, req); err != nil {
 				return response.Unauthorized(err.Error())
 			}
+
+			req.Query().
 			return route.Handler(req)
 		})
 

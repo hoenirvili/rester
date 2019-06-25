@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/hoenirvili/rester/query"
 	"github.com/hoenirvili/rester/request"
 	"github.com/hoenirvili/rester/resource"
 )
@@ -11,7 +10,7 @@ import (
 type Handler func(request.Request) resource.Response
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := request.New(r, query.New(r))
+	req := request.New(r)
 	response := h(req)
 	response.Render(w)
 }

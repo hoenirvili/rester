@@ -2,44 +2,56 @@
 // a query URL adding a thin slice of utilities
 package query
 
-import "net/http"
+import (
+	"strconv"
+)
 
 // Value type used for defining all sort of URL query
 // type values
-type Value uint8
+type Type uint8
 
 const (
-	// String indicates that the query value is a string
-	String Value = iota
+	String Type = iota
+	Int
+	Int64
 )
 
-// Query used for interacting with the request query URL
-// key values
-type Query struct {
-	r     *http.Request
-	pairs map[string]Value
+type Pairs map[string]Type
+
+type Value struct {
+	t   Type
+	raw string
 }
 
-// New returns a new Query object used for indexing and getting
-// query parameters from the request URL
-func New(r *http.Request) Query {
-	return Query{
-		r:     r,
-		pairs: make(map[string]Value),
-	}
+func NewValue(t Type, raw string) Value {
+	return Value{t, raw}
 }
 
-// String returns the value found at the given key as string
-func (q Query) String(key string) string {
-	typeOfValue, ok := q.pairs[key]
-	if !ok {
-		return ""
+func (v Value) String() string {
+	if v.t != String {
+		panic("type inferred mismatch in query not string")
 	}
+	return v.raw
+}
 
-	switch typeOfValue {
-	case String:
-		return q.r.URL.Query().Get(key)
+func (v Value) Int() int {
+	if v.t != Int {
+		panic("type inferred mismatch in query not int")
 	}
+	r, err := strconv.ParseInt(v.raw, 10, 32)
+	if err != nil {
+		return 0
+	}
+	return int(r)
+}
 
-	return ""
+func (v Value) Int64() int64 {
+	if v.t != Int64 {
+		panic("type inferred mismatch in query not int64")
+	}
+	r, err := strconv.ParseInt(v.raw, 10, 64)
+	if err != nil {
+		return int64(0)
+	}
+	return int64(r)
 }

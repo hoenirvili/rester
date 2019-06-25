@@ -11,7 +11,7 @@ type Route struct {
 	Method  string
 	URL     string
 	Handler handler.Handler
-	Queries *query.Query
+	Queries query.Pairs
 }
 
 type Routes []Route
