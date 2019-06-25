@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/hoenirvili/rester/handler"
 	"github.com/hoenirvili/rester/permission"
+	"github.com/hoenirvili/rester/query"
 	"github.com/hoenirvili/rester/request"
 	"github.com/hoenirvili/rester/resource"
 	"github.com/hoenirvili/rester/response"
@@ -109,13 +110,13 @@ func WithTokenValidator(t TokenValidator) Option {
 // NotFound defines a handler to respond whenever a route could
 // not be found
 func (r *Rester) NotFound(h handler.Handler) {
-	r.r.NotFound(handler.HttpHandlerFunc(h))
+	r.r.NotFound(httphandler(h, nil))
 }
 
 // MethodNotAllowed defines a handler to respond whenever a method is
 // not allowed
 func (r *Rester) MethodNotAllowed(h handler.Handler) {
-	r.r.MethodNotAllowed(handler.HttpHandlerFunc(h))
+	r.r.MethodNotAllowed(httphandler(h, nil))
 }
 
 // ServeHTTP based on the incoming request route it to the available resource handler
@@ -166,7 +167,7 @@ func (r *Rester) Resource(base string, router Resource) {
 			route.Allow = permission.Anonymous
 		}
 
-		handler := handler.HttpHandlerFunc(func(req request.Request) resource.Response {
+		h := func(req request.Request) resource.Response {
 			if err := isRequestAllowed(route.Allow, req); err != nil {
 				return response.Unauthorized(err.Error())
 			}
@@ -179,8 +180,16 @@ func (r *Rester) Resource(base string, router Resource) {
 			}
 
 			return route.Handler(req)
-		})
+		}
 
-		r.r.Method(route.Method, route.URL, handler)
+		r.r.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
 	}
+}
+
+func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		request := request.New(r, pairs)
+		response := h(request)
+		response.Render(w)
+	})
 }
