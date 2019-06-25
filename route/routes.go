@@ -7,11 +7,11 @@ import (
 )
 
 type Route struct {
-	Allow   permission.Permissions
-	Method  string
-	URL     string
-	Handler handler.Handler
-	Queries query.Pairs
+	Allow      permission.Permissions
+	Method     string
+	URL        string
+	Handler    handler.Handler
+	QueryPairs query.Pairs
 }
 
 type Routes []Route

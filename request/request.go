@@ -8,14 +8,17 @@ import (
 
 type Request struct {
 	*http.Request
-	pairs map[string]query.Type
+	pairs map[string]query.Value
 }
 
-func New(r *http.Request, pairs map[string]query.Type) Request {
-	return Request{r, pairs}
+func (r Request) Pairs() map[string]query.Value {
+	return r.pairs
+}
+
+func New(r *http.Request) Request {
+	return Request{Request: r}
 }
 
 func (r Request) Query(key string) query.Value {
-	t := r.pairs[key]
-	return query.NewValue(t, r.URL.Query().Get(key))
+	return r.pairs[key]
 }
