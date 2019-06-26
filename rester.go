@@ -150,6 +150,23 @@ func (r *Rester) validRoute(route route.Route) {
 	}
 }
 
+type Inliner interface {
+	Inline() []Resource
+}
+
+func (r *Rester) Inline(i Inliner) {
+	r.r.Group(func(groupRouter chi.Router) {
+		for _, resource := range i.Inline() {
+			r.resource(groupRouter, resource.Routes())
+		}
+	})
+}
+
+//TODO(hoenir): refactor Resource core into this function
+func (r *Rester) resource(router chi.Router, routes route.Routes) {
+
+}
+
 // Resource initializes a resource with the all available sub-routes of the resource
 func (r *Rester) Resource(base string, router Resource) {
 	isRequestAllowed := func(allow permission.Permissions, req request.Request) error {
