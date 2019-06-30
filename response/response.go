@@ -66,7 +66,9 @@ func (r Response) Render(w http.ResponseWriter) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(payload)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		panic(err)
+	}
 }
 
 // Ok returns an empty status ok response
