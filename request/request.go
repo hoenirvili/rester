@@ -3,6 +3,8 @@ package request
 import (
 	"net/http"
 
+	"github.com/go-chi/chi"
+
 	"github.com/hoenirvili/rester/query"
 )
 
@@ -24,4 +26,8 @@ func New(r *http.Request, pairs map[string]query.Value) Request {
 
 func (r Request) Query(key string) query.Value {
 	return r.pairs[key]
+}
+
+func (r Request) URLParam(key string) string {
+	return chi.URLParam(r.Request, key)
 }
