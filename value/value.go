@@ -5,52 +5,60 @@ import (
 	"strconv"
 )
 
-type Value struct {
-	string
-}
-
 type Type uint8
 
 const (
 	String Type = iota
 	Int
 	Int64
+	Uint64
 )
 
-var internalDefault = map[Type]interface{}{
-	String: "",
-	Int:    int(0),
-	Int64:  int64(0),
-}
-
-func (v Value) Parse(t Type) interface{} {
+func Parse(input string, t Type) (*Value, error) {
 	switch t {
 	case String:
-		return {}interface{value}
+		return &Value{input}, nil
 	case Int:
-		n, err := strconv.ParseInt(value, 10, 32)
+		n, err := strconv.ParseInt(input, 10, 32)
 		if err != nil {
-			return err
+			return nil, errors.New(
+				"cannot parse the given input " + input + " into Int")
 		}
-		v.raw = int(n)
+		return &Value{int(n)}, nil
 	case Int64:
-		n, err := strconv.ParseInt(value, 10, 64)
+		n, err := strconv.ParseInt(input, 10, 64)
 		if err != nil {
-			return err
+			return nil, errors.New(
+				"cannot parse the given input " + input + " into Int64")
 		}
-		v.raw = n
+		return &Value{n}, nil
+	case Uint64:
+		n, err := strconv.ParseUint(input, 10, 64)
+		if err != nil {
+			return nil, errors.New(
+				"cannot parse the given input " + input + " into Uint64")
+		}
+		return &Value{n}, nil
 	default:
-		return errors.New("Unsupported query value type")
+		return nil, errors.New("unsupported type")
 	}
+}
 
-	return nil
+type Value struct {
+	raw interface{}
 }
 
 func (v Value) String() string {
-	str, _ := v.parse(stringParse)
+	str, ok := v.raw.(string)
+	if !ok {
+		return ""
+	}
 	return str
 }
 
-func (v Value) Uint64() {
-	return v.parse(uint64Parse)
+func (v Value) Int64() int64 {
+	return v.raw.(int64)
+}
+func (v Value) Int() int {
+	return v.raw.(int)
 }

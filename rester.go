@@ -191,8 +191,10 @@ func (r *Rester) Resource(base string, router Resource) {
 
 			values := req.URL.Query()
 			for key, pair := range req.Pairs() {
-				if err := pair.Parse(key, values); err != nil {
-					return response.BadRequest(err.Error())
+				if pair.Required {
+					if err := pair.Parse(key, values); err != nil {
+						return response.BadRequest(err.Error())
+					}
 				}
 			}
 
