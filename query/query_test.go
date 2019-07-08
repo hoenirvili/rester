@@ -14,8 +14,7 @@ func TestValuePairParse(t *testing.T) {
 	require := require.New(t)
 	p := query.Pairs{
 		"test": &query.Value{
-			Type:     value.Int,
-			Required: true,
+			Type: value.Int,
 		},
 	}
 
@@ -27,32 +26,34 @@ func TestValuePairParse(t *testing.T) {
 	require.Equal(300, n)
 }
 
-// func TestValueParse(t *testing.T) {
-// 	require := require.New(t)
-// 	v := query.Value{Type: query.String}
-// 	endpoint := "testkey=here"
-// 	values, err := url.ParseQuery(endpoint)
-// 	require.NoError(err)
-// 	err = v.Parse("testkey", values)
-// 	require.NoError(err)
-// }
-//
-// func TestValueParseWithError(t *testing.T) {
-// 	require := require.New(t)
-// 	v := query.Value{Type: query.String, Required: true}
-// 	endpoint := "testkey="
-// 	values, err := url.ParseQuery(endpoint)
-// 	require.NoError(err)
-// 	err = v.Parse("testkey", values)
-// 	require.Error(err)
-// }
-//
-// func TestValueParseWithoutValue(t *testing.T) {
-// 	require := require.New(t)
-// 	v := query.Value{Type: query.String}
-// 	endpoint := "testkey="
-// 	values, err := url.ParseQuery(endpoint)
-// 	require.NoError(err)
-// 	err = v.Parse("testkey", values)
-// 	require.NoError(err)
-// }
+func TestPairEmptyParse(t *testing.T) {
+	require := require.New(t)
+	p := query.Pairs{}
+
+	err := p.Parse("test", url.Values{})
+	require.Error(err)
+}
+
+func TestPairParseEmptyURLValues(t *testing.T) {
+	require := require.New(t)
+	p := query.Pairs{}
+
+	err := p.Parse("test", url.Values{"test": []string{}})
+	require.Error(err)
+}
+
+func TestPairParseEmptyArray(t *testing.T) {
+	require := require.New(t)
+	p := query.Pairs{"test": &query.Value{}}
+	err := p.Parse("test", url.Values{"test": []string{}})
+	require.Error(err)
+}
+
+func TestPairParseWithError(t *testing.T) {
+	require := require.New(t)
+	p := query.Pairs{"test": &query.Value{
+		Type: value.Type(0xff),
+	}}
+	err := p.Parse("test", url.Values{"test": []string{"anothertestt"}})
+	require.Error(err)
+}

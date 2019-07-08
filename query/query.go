@@ -22,33 +22,46 @@ type Value struct {
 	Required bool
 
 	*value.Value
+	err error
+}
+
+func (v Value) Parsed() bool {
+	return v.Value != nil
+}
+
+func (v Value) Error() error {
+	return v.err
 }
 
 // Pairs holds key value query url pairs
 type Pairs map[string]*Value
 
-func (p Pairs) Parse(key string, values url.Values) error {
-	if len(values) == 0 {
-		return errors.New("cannot parse an empty url query map")
-	}
-
-	v, ok := p[key]
+func (p Pairs) panicCheckKey(key string) {
+	_, ok := p[key]
 	if !ok {
 		panic("key " + key + " does not exist in map of query pairs")
+	}
+}
+
+func (p Pairs) Parse(key string, values url.Values) error {
+	p.panicCheckKey(key)
+
+	v := p[key]
+	if len(values) == 0 {
+		v.err = errors.New("cannot parse an empty url query map")
+		return v.err
 	}
 
 	queryValue := values[key]
 	switch len(queryValue) {
 	case 0:
-		return errors.New("cannot parse an empty url query values map")
+		v.err = errors.New("Cannot parse an empty url query values map")
 	case 1:
-		var err error
-		v.Value, err = value.Parse(queryValue[0], v.Type)
-		if err != nil {
-			return err
-		}
-		return nil
+		v.Value, v.err = value.Parse(queryValue[0], v.Type)
 	default:
-		return errors.New("Not implemented, unsupported array parse")
+		//TODO(hoenir): Maybe add this functionalty in the future
+		v.err = errors.New("Not implemented, cannot parse arrays")
 	}
+
+	return v.err
 }
