@@ -34,6 +34,7 @@ func (r *Request) Query(key string) value.Value {
 	return value.Parse(input, r.pairs[key].Type)
 }
 
-func (r Request) URLParam(key string) string {
-	return chi.URLParam(r.Request, key)
+func (r Request) URLParam(key string, t value.Type) value.Value {
+	input := chi.URLParam(r.Request, key)
+	return value.Parse(input, t)
 }
