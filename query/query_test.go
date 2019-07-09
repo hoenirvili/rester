@@ -36,11 +36,10 @@ func TestPairEmptyParse(t *testing.T) {
 }
 
 func TestPairParseEmptyURLValues(t *testing.T) {
-	//TODO(hoenir): make sure this passes the right path
 	require := require.New(t)
 	p := query.Pairs{"test": query.Value{}}
 
-	err := p.Parse("test", url.Values{"test": []string{}})
+	err := p.Parse("test", url.Values{})
 	require.Error(err)
 }
 
@@ -56,6 +55,6 @@ func TestPairParseWithError(t *testing.T) {
 	p := query.Pairs{"test": query.Value{
 		Type: value.Type(0xff),
 	}}
-	err := p.Parse("test", url.Values{"test": []string{"anothertestt"}})
+	err := p.Parse("test", url.Values{"test": []string{"anothertestt", "onemore"}})
 	require.Error(err)
 }

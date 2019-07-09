@@ -26,7 +26,11 @@ func New(r *http.Request, pairs query.Pairs) Request {
 }
 
 func (r *Request) Query(key string) value.Value {
-	input := r.URLParam(key)
+	input := ""
+	v, ok := r.URL.Query()[key]
+	if ok {
+		input = v[0]
+	}
 	return value.Parse(input, r.pairs[key].Type)
 }
 

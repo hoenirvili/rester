@@ -4,6 +4,7 @@ package query
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 
 	"github.com/hoenirvili/rester/value"
@@ -45,7 +46,9 @@ func (p Pairs) Parse(key string, values url.Values) error {
 	case 0:
 		return errors.New("Cannot parse an empty url query values map")
 	case 1:
-		return value.Parse(queryValue[0], p[key].Type).Error()
+		value := value.Parse(queryValue[0], p[key].Type)
+		fmt.Println(value)
+		return value.Error()
 	default:
 		//TODO(hoenir): Maybe add this functionalty in the future
 		return errors.New("Not implemented, cannot parse arrays")

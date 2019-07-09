@@ -22,21 +22,21 @@ func Parse(input string, t Type) Value {
 		n, err := strconv.ParseInt(input, 10, 32)
 		if err != nil {
 			err = errors.New(
-				"cannot parse the given input " + input + " into Int")
+				`cannot parse the given input "` + input + `" into Int`)
 		}
 		return Value{int(n), err}
 	case Int64:
 		n, err := strconv.ParseInt(input, 10, 64)
 		if err != nil {
 			err = errors.New(
-				"cannot parse the given input " + input + " into Int64")
+				`cannot parse the given input "` + input + `" into Int64`)
 		}
 		return Value{n, err}
 	case Uint64:
 		n, err := strconv.ParseUint(input, 10, 64)
 		if err != nil {
 			err = errors.New(
-				"cannot parse the given input " + input + " into Uint64")
+				`cannot parse the given input "` + input + `" into Uint64`)
 		}
 		return Value{n, err}
 	default:
