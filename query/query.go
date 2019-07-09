@@ -10,6 +10,7 @@ import (
 )
 
 type Value struct {
+	// Type is the type of value of the query param
 	Type value.Type
 
 	// Required is true if the query URL is required to be present
@@ -20,21 +21,10 @@ type Value struct {
 	// Type specified above then this will also return with
 	// response.BadRequest
 	Required bool
-
-	*value.Value
-	err error
-}
-
-func (v Value) Parsed() bool {
-	return v.Value != nil
-}
-
-func (v Value) Error() error {
-	return v.err
 }
 
 // Pairs holds key value query url pairs
-type Pairs map[string]*Value
+type Pairs map[string]Value
 
 func (p Pairs) panicCheckKey(key string) {
 	_, ok := p[key]
@@ -46,22 +36,18 @@ func (p Pairs) panicCheckKey(key string) {
 func (p Pairs) Parse(key string, values url.Values) error {
 	p.panicCheckKey(key)
 
-	v := p[key]
 	if len(values) == 0 {
-		v.err = errors.New("cannot parse an empty url query map")
-		return v.err
+		return errors.New("cannot parse an empty url query map")
 	}
 
 	queryValue := values[key]
 	switch len(queryValue) {
 	case 0:
-		v.err = errors.New("Cannot parse an empty url query values map")
+		return errors.New("Cannot parse an empty url query values map")
 	case 1:
-		v.Value, v.err = value.Parse(queryValue[0], v.Type)
+		return value.Parse(queryValue[0], p[key].Type).Error()
 	default:
 		//TODO(hoenir): Maybe add this functionalty in the future
-		v.err = errors.New("Not implemented, cannot parse arrays")
+		return errors.New("Not implemented, cannot parse arrays")
 	}
-
-	return v.err
 }

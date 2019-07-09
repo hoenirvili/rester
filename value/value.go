@@ -14,39 +14,42 @@ const (
 	Uint64
 )
 
-func Parse(input string, t Type) (*Value, error) {
+func Parse(input string, t Type) Value {
 	switch t {
 	case String:
-		return &Value{input}, nil
+		return Value{input, nil}
 	case Int:
 		n, err := strconv.ParseInt(input, 10, 32)
 		if err != nil {
-			return &Value{int(n)}, errors.New(
+			err = errors.New(
 				"cannot parse the given input " + input + " into Int")
 		}
-		return &Value{int(n)}, nil
+		return Value{int(n), err}
 	case Int64:
 		n, err := strconv.ParseInt(input, 10, 64)
 		if err != nil {
-			return &Value{int64(n)}, errors.New(
+			err = errors.New(
 				"cannot parse the given input " + input + " into Int64")
 		}
-		return &Value{n}, nil
+		return Value{n, err}
 	case Uint64:
 		n, err := strconv.ParseUint(input, 10, 64)
 		if err != nil {
-			return &Value{uint64(n)}, errors.New(
+			err = errors.New(
 				"cannot parse the given input " + input + " into Uint64")
 		}
-		return &Value{n}, nil
+		return Value{n, err}
 	default:
-		return nil, errors.New("unsupported type")
+		return Value{nil, errors.New("unsupported type")}
 	}
 }
 
 type Value struct {
 	raw interface{}
+	err error
 }
+
+func (v Value) Error() error { return v.err }
 
 func (v Value) String() string {
 	str, ok := v.raw.(string)
@@ -59,6 +62,7 @@ func (v Value) String() string {
 func (v Value) Int64() int64 {
 	return v.raw.(int64)
 }
+
 func (v Value) Int() int {
 	return v.raw.(int)
 }

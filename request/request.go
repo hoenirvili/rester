@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/hoenirvili/rester/query"
+	"github.com/hoenirvili/rester/value"
 )
 
 type Request struct {
@@ -24,12 +25,9 @@ func New(r *http.Request, pairs query.Pairs) Request {
 	return Request{r, pairs}
 }
 
-func (r *Request) Query(key string) *query.Value {
-	value := r.pairs[key]
-	if !value.Parsed() {
-		r.pairs.Parse(key, r.URL.Query())
-	}
-	return value
+func (r *Request) Query(key string) value.Value {
+	input := r.URLParam(key)
+	return value.Parse(input, r.pairs[key].Type)
 }
 
 func (r Request) URLParam(key string) string {

@@ -192,6 +192,7 @@ func (r *Rester) Resource(base string, router Resource) {
 			values := req.URL.Query()
 			pairs := req.Pairs()
 			for key := range pairs {
+				// parse a head of time
 				if pairs[key].Required {
 					if err := pairs.Parse(key, values); err != nil {
 						return response.BadRequest(err.Error())
