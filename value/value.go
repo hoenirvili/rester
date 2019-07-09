@@ -58,11 +58,6 @@ func (v Value) String() string {
 	}
 	return str
 }
-
-func (v Value) Int64() int64 {
-	return v.raw.(int64)
-}
-
-func (v Value) Int() int {
-	return v.raw.(int)
-}
+func (v Value) Int64() int64   { return v.raw.(int64) }
+func (v Value) Int() int       { return v.raw.(int) }
+func (v Value) Uint64() uint64 { return v.raw.(uint64) }
