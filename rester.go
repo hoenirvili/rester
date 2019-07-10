@@ -178,8 +178,9 @@ func serveFiles(r chi.Router, path string, root http.FileSystem) {
 }
 
 func (r *Rester) Static(path string, dir http.Dir) {
-	serveFiles(r.r, path, dir)
-
+	r.r.Group(func(groupRouter chi.Router) {
+		serveFiles(r.r, path, dir)
+	})
 }
 
 func (r *Rester) ResourceInline(base string, i ResourceInliner) {
