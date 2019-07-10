@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/hoenirvili/rester/handler"
@@ -152,26 +153,45 @@ func (r *Rester) validRoute(route route.Route) {
 	}
 }
 
-type Inliner interface {
-	Inline() []Resource
+type ResourceInliner interface {
+	ResourceInline() []Resource
 }
 
-func (r *Rester) Inline(i Inliner) {
+func serveFiles(r chi.Router, path string, root http.FileSystem) {
+	if strings.ContainsAny(path, "{}*") {
+		panic("FileServer does not permit URL parameters.")
+	}
+
+	fs := http.StripPrefix(path, http.FileServer(root))
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fs.ServeHTTP(w, r)
+		},
+	))
+}
+
+func (r *Rester) Static(path string, dir http.Dir) {
+	serveFiles(r.r, path, dir)
+
+}
+
+func (r *Rester) ResourceInline(base string, i ResourceInliner) {
 	r.r.Group(func(groupRouter chi.Router) {
-		for _, resource := range i.Inline() {
-			r.resource(groupRouter, resource.Routes())
+		for _, resource := range i.ResourceInline() {
+			r.resource(groupRouter, base, resource)
 		}
 	})
 }
 
-//TODO(hoenir): refactor Resource core into this function
-func (r *Rester) resource(router chi.Router, routes route.Routes) {
-
-}
-
-// Resource initializes a resource with the all available sub-routes of the resource
-func (r *Rester) Resource(base string, router Resource) {
-	isRequestAllowed := func(allow permission.Permissions, req request.Request) error {
+func (r *Rester) resource(groupRouter chi.Router, base string, router Resource) {
+	isRequestAllowed := func(permission.Permissions, request.Request) error {
 		return nil
 	}
 
@@ -202,9 +222,13 @@ func (r *Rester) Resource(base string, router Resource) {
 			}
 			return route.Handler(req)
 		}
-
-		r.r.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+		groupRouter.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
 	}
+}
+
+// Resource initializes a resource with the all available sub-routes of the resource
+func (r *Rester) Resource(base string, router Resource) {
+	r.resource(r.r, base, router)
 }
 
 func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
