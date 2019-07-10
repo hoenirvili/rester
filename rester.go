@@ -133,7 +133,7 @@ type Resource interface {
 // checkPermission checks if the value with the key permission exists and if
 // it passes the guard check
 func checkPermission(allow permission.Permissions, req request.Request) error {
-	in := req.Request.Context().Value("permission").(permission.Permissions)
+	in := req.Request.Context().Value("permissions").(permission.Permissions)
 	if !guard(in, allow) {
 		return errors.New("You don't have permission to access this resource")
 	}
