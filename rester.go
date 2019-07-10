@@ -30,7 +30,7 @@ type Rester struct {
 	o Options
 }
 
-// New returns a new Rester http.Handler comptabile that's ready
+// New returns a new Rester http.Handler compatible that's ready
 // to serve incoming  http rest request
 func New(opts ...Option) *Rester {
 	o := Options{}
@@ -43,6 +43,8 @@ func New(opts ...Option) *Rester {
 }
 
 func (r *Rester) appendTokenMiddleware() {
+	// if we do not have a custom validator set
+	// do not include the token middleware
 	if r.o.validator == nil {
 		return
 	}
@@ -89,7 +91,7 @@ type Options struct {
 	validator TokenValidator
 }
 
-// TokenValidator defines ways of interactinv with the token
+// TokenValidator defines ways of interactions with the token
 type TokenValidator interface {
 	// Verify verifies if the request contains the desired token
 	// This also can verify the expiration time or other claims
@@ -101,7 +103,7 @@ type TokenValidator interface {
 }
 
 // WithTokenValidator sets the underlying token validation implementation
-// to use to validate and extract token metadata information to authorize and
+// to use to validate and extract token meta-data information to authorize and
 // authenticate the
 func WithTokenValidator(t TokenValidator) Option {
 	return func(opts *Options) { opts.validator = t }
