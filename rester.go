@@ -1,7 +1,7 @@
-// Package rester used to define and compose http rest resources
-// The package offers tiny handy abstractions to construct your rest api in a friendly and
-// super mantainable way, yet to offer the flexibility required for a well more complex
-// solution
+// Package rester used to define and compose multiple HTTP REST resources
+// The package offers abstractions in order to construct your REST API
+// in a friendly and maintainable way, yet offering the flexibility
+// for a well more complex solution
 package rester
 
 import (
@@ -20,45 +20,54 @@ import (
 	"github.com/hoenirvili/rester/route"
 )
 
-// Rester used for constructing and initializing
-// the http router with routes
-type Rester struct {
-	// r is the main underlying routes to dispatch and to assemble
-	// all http rest resource handlers
-	r chi.Router
-
-	// o options type holding different kind of rest options
-	o Options
+type config struct {
+	notfound        http.HandlerFunc
+	methodnotallowd http.HandlerFunc
+	middlewares     []middleware
+	resources       map[string]Resource
 }
+
+// Rester used for constructing and initializing the http router with routes
+type Rester struct {
+	root    chi.Router
+	options Options
+	config  config
+}
+
+type middleware func(http.Handler) http.Handler
 
 // New returns a new Rester http.Handler compatible that's ready
 // to serve incoming  http rest request
 func New(opts ...Option) *Rester {
-	o := Options{}
+	options := Options{}
 	for _, setter := range opts {
-		setter(&o)
+		setter(&options)
 	}
-	r := &Rester{chi.NewRouter(), o}
-	r.appendMiddlewares()
+	r := &Rester{
+		root:    chi.NewRouter(),
+		options: options,
+		config: config{
+			resources: make(map[string]Resource),
+		},
+	}
+	r.appendTokenMiddleware()
 	return r
 }
 
 func (r *Rester) appendTokenMiddleware() {
-	// if we do not have a custom validator set
-	// do not include the token middleware
-	if r.o.validator == nil {
+	if r.options.validator == nil {
 		return
 	}
 
-	r.r.Use(func(next http.Handler) http.Handler {
+	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if err := r.o.validator.Verify(req); err != nil {
+			if err := r.options.validator.Verify(req); err != nil {
 				resp := response.Unauthorized(err.Error())
 				resp.Render(w)
 				return
 			}
 
-			permissions, err := r.o.validator.Extract()
+			permissions, err := r.options.validator.Extract()
 			if err != nil {
 				resp := response.Unauthorized(err.Error())
 				resp.Render(w)
@@ -69,14 +78,11 @@ func (r *Rester) appendTokenMiddleware() {
 			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)
 		})
-	})
+	}
+
+	r.config.middlewares = append(r.config.middlewares, middleware)
 }
 
-func (r *Rester) appendMiddlewares() {
-	r.appendTokenMiddleware()
-}
-
-// guard return true if the permission on is set in
 func guard(in permission.Permissions, on permission.Permissions) bool {
 	return in&on != 0
 }
@@ -90,6 +96,8 @@ type Option func(opt *Options)
 type Options struct {
 	// validator used for token validation and extraction
 	validator TokenValidator
+	// version adds the the api version as the base route
+	version string
 }
 
 // TokenValidator defines ways of interactions with the token
@@ -110,21 +118,27 @@ func WithTokenValidator(t TokenValidator) Option {
 	return func(opts *Options) { opts.validator = t }
 }
 
-// NotFound defines a handler to respond whenever a route could
-// not be found
+// WithVersioning appends to the path route the prefix "/version/"
+func WithVersioning(version string) Option {
+	return func(opts *Options) { opts.version = "/" + version }
+}
+
+// NotFound defines a handler to respond whenever a route could not be found
 func (r *Rester) NotFound(h handler.Handler) {
-	r.r.NotFound(httphandler(h, nil))
+	//append into middleware stack
+	r.config.notfound = httphandler(h, nil)
 }
 
 // MethodNotAllowed defines a handler to respond whenever a method is
-// not allowed
+// not allowed on a route
 func (r *Rester) MethodNotAllowed(h handler.Handler) {
-	r.r.MethodNotAllowed(httphandler(h, nil))
+	// append into middleware stack
+	r.config.methodnotallowd = httphandler(h, nil)
 }
 
 // ServeHTTP based on the incoming request route it to the available resource handler
 func (r *Rester) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	r.r.ServeHTTP(w, req)
+	r.root.ServeHTTP(w, req)
 }
 
 // Resource defines a way of composing routes into a resource
@@ -153,13 +167,9 @@ func (r *Rester) validRoute(route route.Route) {
 	}
 }
 
-type ResourceInliner interface {
-	ResourceInline() []Resource
-}
-
 func serveFiles(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
-		panic("FileServer does not permit URL parameters.")
+		panic("serving files does not permit URL parameters")
 	}
 
 	fs := http.StripPrefix(path, http.FileServer(root))
@@ -177,59 +187,72 @@ func serveFiles(r chi.Router, path string, root http.FileSystem) {
 	))
 }
 
-func (r *Rester) Static(path string, dir http.Dir) {
-	r.r.Group(func(groupRouter chi.Router) {
-		serveFiles(r.r, path, dir)
+// Static serve static files from the location pointed by dir
+// This has limited support so don't expect much customization
+func (r *Rester) Static(dir string) {
+	r.root.Group(func(g chi.Router) {
+		serveFiles(g, "/", http.Dir(dir))
 	})
 }
 
-func (r *Rester) ResourceInline(base string, i ResourceInliner) {
-	r.r.Group(func(groupRouter chi.Router) {
-		for _, resource := range i.ResourceInline() {
-			r.resource(groupRouter, base, resource)
+// Build builds the internal state of the router making it ready for
+// dispatching requests
+func (r *Rester) Build() {
+	r.root.Group(func(g chi.Router) {
+		router := chi.NewRouter()
+		g.Mount(r.options.version, router)
+		router.NotFound(r.config.notfound)
+		router.MethodNotAllowed(r.config.methodnotallowd)
+		for _, middleware := range r.config.middlewares {
+			router.Use(middleware)
+		}
+		for path, resource := range r.config.resources {
+			r.resource(router, path, resource)
 		}
 	})
 }
 
-func (r *Rester) resource(groupRouter chi.Router, base string, router Resource) {
-	isRequestAllowed := func(permission.Permissions, request.Request) error {
-		return nil
-	}
-
-	if r.o.validator != nil {
-		isRequestAllowed = checkPermission
-	}
-
-	for _, route := range router.Routes() {
-		r.validRoute(route)
-
-		if route.Allow == 0 {
-			route.Allow = permission.Anonymous
+func (r *Rester) resource(g chi.Router, path string, res Resource) {
+	g.Route(path, func(router chi.Router) {
+		isRequestAllowed := func(permission.Permissions, request.Request) error {
+			return nil
 		}
 
-		h := func(req request.Request) resource.Response {
-			if err := isRequestAllowed(route.Allow, req); err != nil {
-				return response.Unauthorized(err.Error())
+		if r.options.validator != nil {
+			isRequestAllowed = checkPermission
+		}
+
+		for _, route := range res.Routes() {
+			r.validRoute(route)
+			if route.Allow == 0 {
+				route.Allow = permission.Anonymous
 			}
-
-			values := req.URL.Query()
-			pairs := req.Pairs()
-			for key := range pairs {
-				if pairs[key].Required {
-					if err := pairs.Parse(key, values); err != nil {
-						return response.BadRequest(err.Error())
+			h := func(req request.Request) resource.Response {
+				if err := isRequestAllowed(route.Allow, req); err != nil {
+					return response.Unauthorized(err.Error())
+				}
+				values := req.URL.Query()
+				pairs := req.Pairs()
+				for key := range pairs {
+					if pairs[key].Required {
+						if err := pairs.Parse(key, values); err != nil {
+							return response.BadRequest(err.Error())
+						}
 					}
 				}
+				return route.Handler(req)
 			}
-			return route.Handler(req)
+			router.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
 		}
-		groupRouter.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
-	}
+	})
 }
 
 // Resource initializes a resource with the all available sub-routes of the resource
-func (r *Rester) Resource(base string, router Resource) {
-	r.resource(r.r, base, router)
+func (r *Rester) Resource(base string, resource Resource) {
+	if _, ok := r.config.resources[base]; ok {
+		panic("cannot append the same resource " + base + "twice")
+	}
+	r.config.resources[base] = resource
 }
 
 func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
