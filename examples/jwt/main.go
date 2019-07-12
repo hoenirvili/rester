@@ -42,7 +42,6 @@ lQIDAQAB
 -----END PUBLIC KEY-----
 `)[1:]
 
-
 func main() {
 	key, err := jwt.ParseRSAPublicKeyFromPEM(pub)
 	if err != nil {
@@ -53,6 +52,7 @@ func main() {
 		rester.WithTokenValidator(token),
 	)
 	rester.Resource("/", new(root))
+	rester.Build()
 	if err := http.ListenAndServe(":8080", rester); err != nil {
 		panic(err)
 	}

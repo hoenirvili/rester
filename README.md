@@ -27,7 +27,7 @@ type jsonResponse struct {
 type root struct{}
 
 func (r *root) index(req request.Request) resource.Response {
-	return response.Response{Payload: &jsonResponse{"Hello World !"}}
+	return response.Payload(&jsonResponse{"Hello World !"})
 }
 
 func (r *root) Routes() route.Routes {
@@ -41,6 +41,7 @@ func (r *root) Routes() route.Routes {
 func main() {
 	rester := rester.New()
 	rester.Resource("/", new(root))
+    rester.Build()
 	if err := http.ListenAndServe(":8080", rester); err != nil {
 		panic(err)
 	}
