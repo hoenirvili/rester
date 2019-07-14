@@ -7,7 +7,6 @@ package rester
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -212,17 +211,17 @@ func (r *Rester) Build() {
 		if r.options.version == "" {
 			r.options.version = "/"
 		}
-		router := chi.NewRouter()
-		router.NotFound(r.config.notfound)
-		router.MethodNotAllowed(r.config.methodnotallowed)
-		for _, middleware := range r.config.middleware.global {
-			// global middlewares
-			router.Use(middleware)
-		}
-		for path, resource := range r.config.resources {
-			r.resource(router, path, resource)
-		}
-		g.Mount(r.options.version, router)
+		g.Route(r.options.version, func(router chi.Router) {
+			router.NotFound(r.config.notfound)
+			router.MethodNotAllowed(r.config.methodnotallowed)
+			for _, middleware := range r.config.middleware.global {
+				// global middlewares
+				router.Use(middleware)
+			}
+			for path, resource := range r.config.resources {
+				r.resource(router, path, resource)
+			}
+		})
 	})
 }
 
@@ -230,58 +229,87 @@ func allowAllRequests(permission.Permissions, request.Request) error {
 	return nil
 }
 
-func (r *Rester) resource(g chi.Router, path string, res Resource) {
-	g.Route(path, func(router chi.Router) {
-		isRequestAllowed := allowAllRequests
-		// if we did specify a token validation schema, proceed with checking
-		// the permission return by the validation process in the context
-		if r.options.validator != nil {
-			isRequestAllowed = checkPermission
+func (r *Rester) decideWhichPermissionFunction(
+	p permission.Permissions,
+) func(permission.Permissions, request.Request) error {
+	fn := allowAllRequests
+	if p == permission.Anonymous {
+		return fn
+	}
+
+	// if we did specify a token validation schema, proceed with checking
+	// the permission return by the validation process in the context
+	if r.options.validator != nil {
+		fn = checkPermission
+	}
+
+	return fn
+}
+
+type makeHandlerConfig struct {
+	isRequestAllowed func(permission.Permissions, request.Request) error
+	route            route.Route
+}
+
+func makeHandler(c makeHandlerConfig) handler.Handler {
+	return handler.Handler(func(req request.Request) resource.Response {
+		if err := c.isRequestAllowed(c.route.Allow, req); err != nil {
+			return response.Unauthorized(err.Error())
 		}
-		for _, route := range res.Routes() {
+		values := req.URL.Query()
+		pairs := req.Pairs()
+		for key := range pairs {
+			if pairs[key].Required {
+				if err := pairs.Parse(key, values); err != nil {
+					return response.BadRequest(err.Error())
+				}
+			}
+		}
+		return c.route.Handler(req)
+	})
+}
+func (r *Rester) resource(g chi.Router, base string, res Resource) {
+	g.Route(base, func(router chi.Router) {
+		routes := res.Routes()
+		for _, route := range routes {
 			r.validRoute(route)
 			if route.Allow == 0 {
 				route.Allow = permission.Anonymous
 			}
-
-			if route.Allow == permission.Anonymous {
-				isRequestAllowed = allowAllRequests
-			}
-
-			h := func(req request.Request) resource.Response {
-				if err := isRequestAllowed(route.Allow, req); err != nil {
-					return response.Unauthorized(err.Error())
-				}
-				values := req.URL.Query()
-				pairs := req.Pairs()
-				for key := range pairs {
-					if pairs[key].Required {
-						if err := pairs.Parse(key, values); err != nil {
-							return response.BadRequest(err.Error())
-						}
-					}
-				}
-				return route.Handler(req)
-			}
-
-			fmt.Println(r.options.version + path + route.URL)
+			h := makeHandler(makeHandlerConfig{
+				isRequestAllowed: r.decideWhichPermissionFunction(route.Allow),
+				route:            route,
+			})
 			r.method(router, route, h)
 		}
 	})
 }
 
-func (r *Rester) method(router chi.Router, route route.Route, h func(req request.Request) resource.Response) {
+func (r *Rester) method(router chi.Router, route route.Route, h handler.Handler) {
 	switch route.Allow {
 	case permission.Anonymous:
-		router.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+		router.MethodFunc(
+			route.Method,
+			route.URL,
+			httphandler(h, route.QueryPairs),
+		)
+		return
 	default:
 		if r.options.validator != nil {
-			router.With(r.config.middleware.validator).Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+			router.With(r.config.middleware.validator).
+				MethodFunc(
+					route.Method,
+					route.URL,
+					httphandler(h, route.QueryPairs),
+				)
 			return
 		}
-		router.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+		router.MethodFunc(
+			route.Method,
+			route.URL,
+			httphandler(h, route.QueryPairs),
+		)
 	}
-
 }
 
 // Resource initializes a resource with the all available sub-routes of the resource
