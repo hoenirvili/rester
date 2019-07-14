@@ -7,10 +7,12 @@ package rester
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi"
+
 	"github.com/hoenirvili/rester/handler"
 	"github.com/hoenirvili/rester/permission"
 	"github.com/hoenirvili/rester/query"
@@ -21,10 +23,21 @@ import (
 )
 
 type config struct {
-	notfound        http.HandlerFunc
-	methodnotallowd http.HandlerFunc
-	middlewares     []middleware
-	resources       map[string]Resource
+	notfound         http.HandlerFunc
+	methodnotallowed http.HandlerFunc
+	middleware       struct {
+		global    []middleware
+		validator middleware
+	}
+	resources map[string]Resource
+}
+
+func (c *config) setValidator(m middleware) {
+	c.middleware.validator = m
+}
+
+func (c *config) appendGlobal(m ...middleware) {
+	c.middleware.global = append(c.middleware.global, m...)
 }
 
 // Rester used for constructing and initializing the http router with routes
@@ -80,7 +93,7 @@ func (r *Rester) appendTokenMiddleware() {
 		})
 	}
 
-	r.config.middlewares = append(r.config.middlewares, middleware)
+	r.config.setValidator(middleware)
 }
 
 func guard(in permission.Permissions, on permission.Permissions) bool {
@@ -133,7 +146,7 @@ func (r *Rester) NotFound(h handler.Handler) {
 // not allowed on a route
 func (r *Rester) MethodNotAllowed(h handler.Handler) {
 	// append into middleware stack
-	r.config.methodnotallowd = httphandler(h, nil)
+	r.config.methodnotallowed = httphandler(h, nil)
 }
 
 // ServeHTTP based on the incoming request route it to the available resource handler
@@ -200,24 +213,26 @@ func (r *Rester) Build() {
 			r.options.version = "/"
 		}
 		router := chi.NewRouter()
-		g.Mount(r.options.version, router)
 		router.NotFound(r.config.notfound)
-		router.MethodNotAllowed(r.config.methodnotallowd)
-		for _, middleware := range r.config.middlewares {
+		router.MethodNotAllowed(r.config.methodnotallowed)
+		for _, middleware := range r.config.middleware.global {
 			// global middlewares
 			router.Use(middleware)
 		}
 		for path, resource := range r.config.resources {
 			r.resource(router, path, resource)
 		}
+		g.Mount(r.options.version, router)
 	})
+}
+
+func allowAllRequests(permission.Permissions, request.Request) error {
+	return nil
 }
 
 func (r *Rester) resource(g chi.Router, path string, res Resource) {
 	g.Route(path, func(router chi.Router) {
-		isRequestAllowed := func(permission.Permissions, request.Request) error {
-			return nil
-		}
+		isRequestAllowed := allowAllRequests
 		// if we did specify a token validation schema, proceed with checking
 		// the permission return by the validation process in the context
 		if r.options.validator != nil {
@@ -227,6 +242,10 @@ func (r *Rester) resource(g chi.Router, path string, res Resource) {
 			r.validRoute(route)
 			if route.Allow == 0 {
 				route.Allow = permission.Anonymous
+			}
+
+			if route.Allow == permission.Anonymous {
+				isRequestAllowed = allowAllRequests
 			}
 
 			h := func(req request.Request) resource.Response {
@@ -244,9 +263,25 @@ func (r *Rester) resource(g chi.Router, path string, res Resource) {
 				}
 				return route.Handler(req)
 			}
-			router.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+
+			fmt.Println(r.options.version + path + route.URL)
+			r.method(router, route, h)
 		}
 	})
+}
+
+func (r *Rester) method(router chi.Router, route route.Route, h func(req request.Request) resource.Response) {
+	switch route.Allow {
+	case permission.Anonymous:
+		router.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+	default:
+		if r.options.validator != nil {
+			router.With(r.config.middleware.validator).Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+			return
+		}
+		router.Method(route.Method, route.URL, httphandler(h, route.QueryPairs))
+	}
+
 }
 
 // Resource initializes a resource with the all available sub-routes of the resource
@@ -259,7 +294,7 @@ func (r *Rester) Resource(base string, resource Resource) {
 
 func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
 	if h == nil {
-		return nil
+		panic("no handler given for the route")
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		request := request.New(r, pairs)
