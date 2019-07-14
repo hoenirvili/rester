@@ -23,7 +23,7 @@ func NewJWT(key *rsa.PublicKey) *JWT {
 	fn := func(t *jwt.Token) (interface{}, error) {
 		_, ok := claims["exp"]
 		if !ok {
-			return nil, errors.New("Jwt token expiration not valid")
+			return nil, errors.New("Jwt token exp field not present")
 		}
 		return key, nil
 	}

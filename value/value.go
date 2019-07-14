@@ -15,6 +15,10 @@ const (
 )
 
 func Parse(input string, t Type) Value {
+	if input == "" {
+		return Value{err: errors.New("No query value found")}
+	}
+
 	switch t {
 	case String:
 		return Value{input, nil}
