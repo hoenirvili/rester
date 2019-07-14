@@ -204,6 +204,7 @@ func (r *Rester) Build() {
 		router.NotFound(r.config.notfound)
 		router.MethodNotAllowed(r.config.methodnotallowd)
 		for _, middleware := range r.config.middlewares {
+			// global middlewares
 			router.Use(middleware)
 		}
 		for path, resource := range r.config.resources {
@@ -217,16 +218,17 @@ func (r *Rester) resource(g chi.Router, path string, res Resource) {
 		isRequestAllowed := func(permission.Permissions, request.Request) error {
 			return nil
 		}
-
+		// if we did specify a token validation schema, proceed with checking
+		// the permission return by the validation process in the context
 		if r.options.validator != nil {
 			isRequestAllowed = checkPermission
 		}
-
 		for _, route := range res.Routes() {
 			r.validRoute(route)
 			if route.Allow == 0 {
 				route.Allow = permission.Anonymous
 			}
+
 			h := func(req request.Request) resource.Response {
 				if err := isRequestAllowed(route.Allow, req); err != nil {
 					return response.Unauthorized(err.Error())
