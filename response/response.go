@@ -1,3 +1,4 @@
+// Pakcage response used for creating custom HTTP responses
 package response
 
 import (
