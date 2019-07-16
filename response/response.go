@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+
+	"github.com/hoenirvili/rester/permission"
 )
 
 // Error type used for defining json response errors
@@ -32,6 +34,12 @@ type Response struct {
 	Payload    interface{}
 	StatusCode int
 	Headers    http.Header
+
+	permission permission.Permissions
+}
+
+func WithPermission(payload interface{}, p permission.Permissions) *Response {
+	return &Response{Payload: payload, permission: p}
 }
 
 // Render writes the hole json response into the given http.ResponseWriter
@@ -66,9 +74,17 @@ func (r Response) Render(w http.ResponseWriter) {
 		return
 	}
 
+	if p, ok := payload.(Payloader); ok {
+		payload = p.Payload(r.permission)
+	}
+
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		panic(err)
 	}
+}
+
+type Payloader interface {
+	Payload(p permission.Permissions) interface{}
 }
 
 // Ok returns an empty status ok response

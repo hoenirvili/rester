@@ -27,7 +27,11 @@ func New(r *http.Request, pairs query.Pairs) Request {
 }
 
 func (r *Request) Permission() permission.Permissions {
-	return r.Context().Value("permissions").(permission.Permissions)
+	value := r.Context().Value("permissions")
+	if value == nil {
+		return permission.NoPermission
+	}
+	return value.(permission.Permissions)
 }
 
 func (r *Request) Query(key string) value.Value {

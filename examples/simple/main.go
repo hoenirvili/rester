@@ -11,13 +11,14 @@ import (
 )
 
 type jsonResponse struct {
-	Message string `json:"message"`
+	Message string `json:"message,omitempty"`
 }
 
 type root struct{}
 
 func (r *root) index(req request.Request) resource.Response {
-	return response.Response{Payload: &jsonResponse{"Hello World !"}}
+	payload := &jsonResponse{"Hello world!"}
+	return response.Payload(payload)
 }
 
 func (r *root) Routes() route.Routes {

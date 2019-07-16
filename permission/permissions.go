@@ -3,7 +3,8 @@ package permission
 type Permissions int
 
 const (
-	Anonymous Permissions = 1 << iota
+	NoPermission Permissions = 1 << iota
+	Anonymous
 	Basic
 	Admin
 	Super
