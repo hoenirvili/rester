@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi"
 
+	"github.com/hoenirvili/rester/permission"
 	"github.com/hoenirvili/rester/query"
 	"github.com/hoenirvili/rester/value"
 )
@@ -23,6 +24,10 @@ func New(r *http.Request, pairs query.Pairs) Request {
 		pairs = make(query.Pairs)
 	}
 	return Request{r, pairs}
+}
+
+func (r *Request) Permission() permission.Permissions {
+	return r.Context().Value("permissions").(permission.Permissions)
 }
 
 func (r *Request) Query(key string) value.Value {
