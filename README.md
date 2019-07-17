@@ -1,5 +1,5 @@
 # rester
-[![GoDoc](https://godoc.org/github.com/hoenirvili/rester?status.svg)](https://godoc.org/github.com/hoenirvili/rester)
+[![Build Status](https://travis-ci.com/hoenirvili/rester.svg?branch=master)](https://travis-ci.com/hoenirvili/rester) [![GoDoc](https://godoc.org/github.com/hoenirvili/rester?status.svg)](https://godoc.org/github.com/hoenirvili/rester) [![Go Report Card](https://goreportcard.com/badge/github.com/hoenirvili/rester)](https://goreportcard.com/report/github.com/hoenirvili/rester) [![Coverage Status](https://coveralls.io/repos/github/hoenirvili/rester/badge.svg?branch=master)](https://coveralls.io/github/hoenirvili/rester?branch=master)
 
 An Opinionated library for building REST APIs in Go.
 
