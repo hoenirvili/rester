@@ -41,7 +41,7 @@ func (r *root) Routes() route.Routes {
 func main() {
 	rester := rester.New()
 	rester.Resource("/", new(root))
-    rester.Build()
+	rester.Build()
 	if err := http.ListenAndServe(":8080", rester); err != nil {
 		panic(err)
 	}
