@@ -5,7 +5,8 @@ before_install:
 - go get gopkg.in/check.v1
 - go get github.com/mattn/goveralls
 script:
-- "$GOPATH/bin/goveralls -service=travis-ci"
+- go test -v -race
+- $GOPATH/bin/goveralls -service=travis-ci
 env:
   global:
     secure: B3lRtgCsgi+cYS1x42ggemBP344sB6+RxSLEPUr3M4T3pkMt2A7Xf3PXyDDiNGqRA3mmDGQQoRdF2ExCjCIh7sQKqb3xxr4TBPk8e86g5FotWr08pywXcDTrb3wSb9Ym+jNo1Q1WZ8sbIgcuYJLAyr2BP89ITVXsFPv/54sYQhth2/cABMcX8mlxQBvXAkAn1GAKFado98zxuYKwuIrB+hzWlAu8Qx1JYqH6ABAsfE64hTJOlXnEO2VdGXwLuQ7mUBaGLg01Oj26LwDMlnXJQ9qTpGvrT3c8hyGvNUV9DDPGCBxCLwVEKcT4+/ym4Wtfwex2Uh/VHvEDj5P8vGl2E7xjgRReN9dz14RmCXaV+Phi3J0a6CxzqvyupN6wSUe9a0p6MgB1h6GWslJgrVM1GI1WRherlImGiQGncyq7uNGVRRjrQcPbkqvBXb+5gH/yeTca0yxJtUEeJgiOchRq0qm0kvCMA41+1CH+PJhDs3IqQkKJESE9M9SPl2xEWtAPzO11w86LX01TKXeSbGPmkQEjGmZSFlPHnEj+hvW9bRNotW+/0HmWE7d9bBeLF+Px87nX1rf1wGg0OZ/ia/mKgN70hHE8MgkrV7OQkUlV7vVjmaDBz2xC1cnmnOv1fcyCuvAQoOlnTO0mQJe2Yps0bDIVoUkN4FNfxQ/3Ddry+FM=
