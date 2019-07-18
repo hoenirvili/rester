@@ -1,3 +1,5 @@
+// Package permission holds types and functions used for defining
+// the permission of resources
 package permission
 
 type Permissions int

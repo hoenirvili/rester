@@ -1,3 +1,5 @@
+// Package value offers helper functions and types to
+// parse value type strings
 package value
 
 import (

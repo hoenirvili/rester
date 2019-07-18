@@ -1,3 +1,5 @@
+// Package resource defines types used for creating and
+// decorating REST resources
 package resource
 
 import (

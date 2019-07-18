@@ -1,3 +1,4 @@
+// Token package offers a basic jwt token validation method
 package token
 
 import (
