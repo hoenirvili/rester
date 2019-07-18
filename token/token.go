@@ -1,4 +1,4 @@
-// Token package offers a basic jwt token validation method
+// Package token offers a basic jwt token validation method
 package token
 
 import (
