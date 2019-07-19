@@ -35,8 +35,8 @@ func (v *validator) Verify(r *http.Request) error {
 	return v.errVerify
 }
 
-func (v *validator) Extract() (permission.Permissions, error) {
-	return v.permission, v.errExtract
+func (v *validator) Extract() (map[string]interface{}, error) {
+	return map[string]interface{}{"permissions": v.permission}, v.errExtract
 }
 
 func TestWithOpts(t *testing.T) {

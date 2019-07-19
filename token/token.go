@@ -44,14 +44,14 @@ func (j JWT) Verify(r *http.Request) error {
 	return nil
 }
 
-func (j JWT) Extract() (permission.Permissions, error) {
+func (j JWT) Extract() (map[string]interface{}, error) {
 	p, ok := j.claims["permissions"]
 	if !ok {
-		return 0, errors.New("No permission found in the jwt token")
+		return nil, errors.New("No permission found in the jwt token")
 	}
 	v := permission.Permissions(p.(float64))
 	if !v.Valid() {
-		return v, errors.New("Invalid permissions value, value not supported")
+		return nil, errors.New("Invalid permissions value, value not supported")
 	}
-	return v, nil
+	return map[string]interface{}{"permissions": p}, nil
 }

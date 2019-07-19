@@ -79,9 +79,16 @@ func (r *Rester) appendTokenMiddleware() {
 				return
 			}
 
-			permissions, err := r.options.validator.Extract()
+			claims, err := r.options.validator.Extract()
 			if err != nil {
 				resp := response.Unauthorized(err.Error())
+				resp.Render(w)
+				return
+			}
+
+			permissions, ok := claims["permissions"]
+			if !ok {
+				resp := response.InternalError("Token does not contain the permission")
 				resp.Render(w)
 				return
 			}
@@ -120,7 +127,7 @@ type TokenValidator interface {
 
 	// Extract extracts the permission type from the token
 	// to verify in the request chain what kind of callee we are dealing with
-	Extract() (permission.Permissions, error)
+	Extract() (map[string]interface{}, error)
 }
 
 // WithTokenValidator sets the underlying token validation implementation
