@@ -73,27 +73,32 @@ func (r *Rester) appendTokenMiddleware() {
 
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if err := r.options.validator.Verify(req); err != nil {
-				resp := response.Unauthorized(err.Error())
-				resp.Render(w)
-				return
-			}
-
-			claims, err := r.options.validator.Extract()
+			claims, err := r.options.validator.Verify(req)
 			if err != nil {
 				resp := response.Unauthorized(err.Error())
 				resp.Render(w)
 				return
 			}
 
-			permissions, ok := claims["permissions"]
+			p, ok := claims["permissions"]
 			if !ok {
-				resp := response.InternalError("Token does not contain the permission")
+				resp := response.Unauthorized(err.Error())
 				resp.Render(w)
 				return
 			}
 
-			ctx := context.WithValue(req.Context(), "permissions", permissions)
+			value, ok := p.(float64)
+			if !ok {
+				resp := response.Unauthorized("invalid permission value")
+				resp.Render(w)
+				return
+			}
+
+			claims["permissions"] = permission.Permissions(value)
+			ctx := req.Context()
+			for key, value := range claims {
+				ctx = context.WithValue(req.Context(), key, value)
+			}
 			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)
 		})
@@ -123,11 +128,8 @@ type Options struct {
 type TokenValidator interface {
 	// Verify verifies if the request contains the desired token
 	// This also can verify the expiration time or other claims
-	Verify(r *http.Request) error
-
-	// Extract extracts the permission type from the token
-	// to verify in the request chain what kind of callee we are dealing with
-	Extract() (map[string]interface{}, error)
+	// With success this will return the validated claims
+	Verify(r *http.Request) (map[string]interface{}, error)
 }
 
 // WithTokenValidator sets the underlying token validation implementation

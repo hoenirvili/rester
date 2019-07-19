@@ -12,7 +12,6 @@ import (
 
 	"github.com/hoenirvili/rester"
 	"github.com/hoenirvili/rester/handler"
-	"github.com/hoenirvili/rester/permission"
 	"github.com/hoenirvili/rester/request"
 	"github.com/hoenirvili/rester/resource"
 	"github.com/hoenirvili/rester/response"
@@ -26,17 +25,11 @@ func TestNew(t *testing.T) {
 }
 
 type validator struct {
-	permission permission.Permissions
-	errVerify  error
-	errExtract error
+	errVerify error
 }
 
-func (v *validator) Verify(r *http.Request) error {
-	return v.errVerify
-}
-
-func (v *validator) Extract() (map[string]interface{}, error) {
-	return map[string]interface{}{"permissions": v.permission}, v.errExtract
+func (v *validator) Verify(r *http.Request) (map[string]interface{}, error) {
+	return nil, v.errVerify
 }
 
 func TestWithOpts(t *testing.T) {
@@ -96,9 +89,7 @@ func (t *testResource) Routes() route.Routes {
 
 func (r *resterSuite) SetupSuite() {
 	r.require = r.Require()
-	r.validator = &validator{
-		permission: permission.Anonymous,
-	}
+	r.validator = &validator{}
 
 	r.rester = rester.New(rester.WithTokenValidator(r.validator))
 	r.rester.NotFound(handler.Handler(notfound))
