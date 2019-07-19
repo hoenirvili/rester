@@ -89,7 +89,7 @@ func (r *Rester) appendTokenMiddleware() {
 
 			value, ok := p.(float64)
 			if !ok {
-				resp := response.Unauthorized("invalid permission value")
+				resp := response.Unauthorized("Invalid permission value")
 				resp.Render(w)
 				return
 			}
@@ -97,7 +97,7 @@ func (r *Rester) appendTokenMiddleware() {
 			claims["permissions"] = permission.Permissions(value)
 			ctx := req.Context()
 			for key, value := range claims {
-				ctx = context.WithValue(req.Context(), key, value)
+				ctx = context.WithValue(ctx, key, value)
 			}
 			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)
@@ -297,7 +297,7 @@ func (r *Rester) resource(g chi.Router, base string, res Resource) {
 func (r *Rester) method(router chi.Router, route route.Route, h handler.Handler) {
 	switch route.Allow {
 	case permission.Anonymous:
-		router.MethodFunc(
+		router.With(route.Middlewares...).MethodFunc(
 			route.Method,
 			route.URL,
 			httphandler(h, route.QueryPairs),
@@ -306,6 +306,7 @@ func (r *Rester) method(router chi.Router, route route.Route, h handler.Handler)
 	default:
 		if r.options.validator != nil {
 			router.With(r.config.middleware.validator).
+				With(route.Middlewares...).
 				MethodFunc(
 					route.Method,
 					route.URL,
@@ -313,7 +314,7 @@ func (r *Rester) method(router chi.Router, route route.Route, h handler.Handler)
 				)
 			return
 		}
-		router.MethodFunc(
+		router.With(route.Middlewares...).MethodFunc(
 			route.Method,
 			route.URL,
 			httphandler(h, route.QueryPairs),
