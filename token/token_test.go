@@ -1,6 +1,8 @@
 package token_test
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -55,29 +57,29 @@ func tokenStringExpired(r *require.Assertions) string {
 	return stoken
 }
 
-// func TestVerifyToken(t *testing.T) {
-// 	require := require.New(t)
-// 	token := jwt(require)
-// 	tokenString := tokenString(require)
-// 	_, err := token.Verify(&http.Request{
-// 		Header: http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", tokenString)}},
-// 	})
-// 	require.NoError(err)
-// }
+func TestVerifyTokenWithoutPermission(t *testing.T) {
+	require := require.New(t)
+	token := jwt(require)
+	tokenString := tokenString(require)
+	_, err := token.Verify(&http.Request{
+		Header: http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", tokenString)}},
+	})
+	require.Error(err)
+}
 
-// func TestVerifyTokenWithBadInput(t *testing.T) {
-// 	require := require.New(t)
-// 	inputs := []string{
-// 		fmt.Sprintf("Bearer %s", "badtoken"),
-// 		"Bearer", "", "sfhjiuasdhgiusdfsdfa",
-// 		fmt.Sprintf("Bearer %s", tokenStringExpired(require)),
-// 		fmt.Sprintf("Bearer %s", tokenStringWithoutAnyClaims(require)),
-// 	}
-// 	for _, input := range inputs {
-// 		token := jwt(require)
-// 		_, err := token.Verify(&http.Request{
-// 			Header: http.Header{"Authorization": []string{input}},
-// 		})
-// 		require.Error(err)
-// 	}
-// }
+func TestVerifyTokenWithBadInput(t *testing.T) {
+	require := require.New(t)
+	inputs := []string{
+		fmt.Sprintf("Bearer %s", "badtoken"),
+		"Bearer", "", "sfhjiuasdhgiusdfsdfa",
+		fmt.Sprintf("Bearer %s", tokenStringExpired(require)),
+		fmt.Sprintf("Bearer %s", tokenStringWithoutAnyClaims(require)),
+	}
+	for _, input := range inputs {
+		token := jwt(require)
+		_, err := token.Verify(&http.Request{
+			Header: http.Header{"Authorization": []string{input}},
+		})
+		require.Error(err)
+	}
+}

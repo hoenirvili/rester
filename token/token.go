@@ -5,11 +5,9 @@ import (
 	"crypto/rsa"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
-	"github.com/hoenirvili/rester/permission"
 )
 
 type JWT struct {
@@ -19,47 +17,9 @@ type JWT struct {
 	claims    *Claims
 }
 
-type Claims struct {
-	mapClaims jwt.MapClaims
-}
-
-func (c *Claims) VerifyPermissions() error {
-	p, ok := c.mapClaims["permissions"]
-	if !ok {
-		return errors.New("No permission found in the jwt token")
-	}
-	v := permission.Permissions(p.(float64))
-	if !v.Valid() {
-		return errors.New("Invalid permissions value, value not supported")
-	}
-	return nil
-}
-
-func (c *Claims) Valid() error {
-	_, ok := c.mapClaims["exp"]
-	if !ok {
-		return errors.New("Jwt token exp field not present")
-	}
-
-	now := time.Now().Unix()
-	if !c.mapClaims.VerifyExpiresAt(now, false) {
-		return &jwt.ValidationError{
-			Inner:  errors.New("Token is expired"),
-			Errors: jwt.ValidationErrorExpired,
-		}
-	}
-	if err := c.VerifyPermissions(); err != nil {
-		return &jwt.ValidationError{Inner: err}
-	}
-	return nil
-}
-
-func NewClaims() *Claims {
-	return &Claims{make(jwt.MapClaims)}
-}
 func NewJWT(key *rsa.PublicKey) *JWT {
 	claims := NewClaims()
-	opt := request.WithClaims(claims.mapClaims)
+	opt := request.WithClaims(claims)
 	fn := func(t *jwt.Token) (interface{}, error) { return key, nil }
 	ext := request.AuthorizationHeaderExtractor
 	return &JWT{ext, fn, []request.ParseFromRequestOption{opt}, claims}
