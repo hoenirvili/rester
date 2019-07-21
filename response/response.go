@@ -44,16 +44,8 @@ func WithPermission(payload interface{}, p permission.Permissions) *Response {
 }
 
 // Render writes the hole json response into the given http.ResponseWriter
-func (r Response) Render(w http.ResponseWriter) {
+func (r *Response) Render(w http.ResponseWriter) {
 	var payload interface{}
-
-	header := w.Header()
-	header.Add("Content-Type", "application/json")
-	for key, values := range r.Headers {
-		for _, value := range values {
-			header.Set(key, value)
-		}
-	}
 
 	switch {
 	case r.Error != EmptyError:
@@ -69,8 +61,6 @@ func (r Response) Render(w http.ResponseWriter) {
 		r.StatusCode = http.StatusOK
 	}
 
-	w.WriteHeader(r.StatusCode)
-
 	if payload == nil {
 		return
 	}
@@ -79,6 +69,18 @@ func (r Response) Render(w http.ResponseWriter) {
 		payload = p.Payload(r.permission)
 	}
 
+	if payload == nil {
+		return
+	}
+
+	header := w.Header()
+	header.Add("Content-Type", "application/json")
+	for key, values := range r.Headers {
+		for _, value := range values {
+			header.Set(key, value)
+		}
+	}
+	w.WriteHeader(r.StatusCode)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		panic(err)
 	}
@@ -99,7 +101,10 @@ func Err(msg string) *Response {
 
 // Payload returns a response with payload
 func Payload(payload interface{}) *Response {
-	return &Response{Payload: payload}
+	return &Response{
+		Payload:    payload,
+		permission: permission.NoPermission,
+	}
 }
 
 // Headers returns a response that is populated
