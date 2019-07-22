@@ -28,7 +28,7 @@ func TestErrorMarshalJSONErr(t *testing.T) {
 
 func TestResponseOK(t *testing.T) {
 	resp := response.Ok()
-	require.Equal(t, &response.Response{}, resp)
+	require.Equal(t, &response.Response{StatusCode: http.StatusOK}, resp)
 }
 
 func TestResponseError(t *testing.T) {
@@ -40,8 +40,8 @@ func TestResponseError(t *testing.T) {
 func TestResponsePayload(t *testing.T) {
 	p := &struct{ Message string }{"test"}
 	resp := response.Payload(p)
-	require.Equal(t, &response.Response{
-		Payload: p}, resp)
+	require.Equal(t, resp.Payload, p)
+	require.Equal(t, resp.StatusCode, http.StatusOK)
 }
 
 func TestHeaders(t *testing.T) {
@@ -124,18 +124,43 @@ func (r *responseWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+type renderOutCome struct {
+	header     http.Header
+	statusCode int
+	p          []byte
+}
+
+var contentType = http.Header{"Content-Type": []string{"application/json"}}
+
 func TestRender(t *testing.T) {
-	responses := map[*response.Response]*responseWriter{
-		response.NotFound("test"):                         newResponseWriter(),
-		response.Payload("test"):                          newResponseWriter(),
-		response.Ok():                                     newResponseWriter(),
-		&response.Response{Error: response.Error("test")}: newResponseWriter(),
+	responses := map[*response.Response]renderOutCome{
+		response.NotFound("test"): {
+			statusCode: http.StatusNotFound,
+			header:     contentType,
+			p:          []byte(`{"error":"test"}` + "\n"),
+		},
+		response.Payload("test"): {
+			statusCode: http.StatusOK,
+			header:     contentType,
+			p:          []byte(`"test"` + "\n"),
+		},
+		response.Ok(): {
+			statusCode: http.StatusOK,
+			header:     http.Header{},
+		},
+		&response.Response{Error: response.Error("test")}: {
+			statusCode: http.StatusInternalServerError,
+			header:     contentType,
+			p:          []byte(`{"error":"test"}` + "\n"),
+		},
 	}
-	for response, writer := range responses {
-		response.Render(writer)
-		require.Equal(t, writer.Header(), http.Header{
-			"Content-Type": []string{"application/json"},
-		})
+	require := require.New(t)
+	for response, outcome := range responses {
+		w := newResponseWriter()
+		response.Render(w)
+		require.Equal(outcome.header, w.Header())
+		require.Equal(outcome.statusCode, w.StatusCode())
+		require.Equal(outcome.p, w.Data())
 	}
 }
 
@@ -150,10 +175,9 @@ func TestRenderWithHeader(t *testing.T) {
 	r := response.Header("String-Length", "Custom header")
 	w := newResponseWriter()
 	r.Render(w)
-	require.Equal(t, w.Header(), http.Header{
+	require.Equal(t, http.Header{
 		"String-Length": []string{"Custom header"},
-		"Content-Type":  []string{"application/json"},
-	})
+	}, w.Header())
 }
 
 type jsonResponse struct {

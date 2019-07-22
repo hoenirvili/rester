@@ -19,7 +19,7 @@ type jsonResponse struct {
 type root struct{}
 
 func (r *root) index(req request.Request) resource.Response {
-	return response.Response{Payload: &jsonResponse{"Hello World !"}}
+	return response.Payload(&jsonResponse{"Hello World !"})
 }
 
 func (r *root) Routes() route.Routes {

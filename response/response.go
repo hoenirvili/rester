@@ -28,8 +28,8 @@ func (e Error) MarshalJSON() ([]byte, error) {
 	return []byte(`{"error":"` + str + `"}`), nil
 }
 
-// Response holds all response information for responding with an
-// valid rest response
+// Response holds all response information
+// for responding with an valid rest response
 type Response struct {
 	Error      Error
 	Payload    interface{}
@@ -61,19 +61,22 @@ func (r *Response) Render(w http.ResponseWriter) {
 		r.StatusCode = http.StatusOK
 	}
 
-	if payload == nil {
-		return
-	}
-
 	if p, ok := payload.(Payloader); ok {
 		payload = p.Payload(r.permission)
 	}
 
+	header := w.Header()
+
 	if payload == nil {
+		for key, values := range r.Headers {
+			for _, value := range values {
+				header.Set(key, value)
+			}
+		}
+		w.WriteHeader(r.StatusCode)
 		return
 	}
 
-	header := w.Header()
 	header.Add("Content-Type", "application/json")
 	for key, values := range r.Headers {
 		for _, value := range values {
@@ -81,9 +84,7 @@ func (r *Response) Render(w http.ResponseWriter) {
 		}
 	}
 	w.WriteHeader(r.StatusCode)
-	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		panic(err)
-	}
+	json.NewEncoder(w).Encode(payload)
 }
 
 type Payloader interface {
@@ -92,23 +93,24 @@ type Payloader interface {
 
 // Ok returns an empty status ok response
 func Ok() *Response {
-	return &Response{}
+	return &Response{StatusCode: http.StatusOK}
 }
 
 func Err(msg string) *Response {
 	return &Response{Error: Error(msg)}
 }
 
-// Payload returns a response with payload
+// Payload returns a response containing a json payload
 func Payload(payload interface{}) *Response {
 	return &Response{
+		StatusCode: http.StatusOK,
 		Payload:    payload,
 		permission: permission.NoPermission,
 	}
 }
 
-// Headers returns a response that is populated
-// with a key, value pair header
+// Headers returns http with status 200 response
+// that is populated with a key, value pair header
 func Header(key, value string) *Response {
 	headers := make(http.Header)
 	headers.Set(key, value)
