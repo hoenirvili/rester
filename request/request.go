@@ -1,6 +1,7 @@
 package request
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -41,6 +42,11 @@ func (r *Request) Query(key string) value.Value {
 		input = v[0]
 	}
 	return value.Parse(input, r.pairs[key].Type)
+}
+
+func (r *Request) JSON(p interface{}) error {
+	defer r.Request.Body.Close()
+	return json.NewDecoder(r.Request.Body).Decode(p)
 }
 
 func (r Request) URLParam(key string, t value.Type) value.Value {
