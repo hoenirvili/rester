@@ -120,8 +120,13 @@ type Option func(opt *Options)
 type Options struct {
 	// validator used for token validation and extraction
 	validator TokenValidator
+
 	// version adds the the api version as the base route
 	version string
+
+	// global middlwares holds a list of middlewares that will
+	// be used in front of all routes
+	globalMiddlewares middleware
 }
 
 // TokenValidator defines ways of interactions with the token
@@ -146,8 +151,14 @@ func WithVersioning(version string) Option {
 
 // NotFound defines a handler to respond whenever a route could not be found
 func (r *Rester) NotFound(h handler.Handler) {
-	//append into middleware stack
+	// append into middleware stack
 	r.config.notfound = httphandler(h, nil)
+}
+
+// UseGloablMiddleware appends the list of middlewares into the global
+// middleware stack to be put in front of every request emitted to the api
+func (r *Rester) UseGloablMiddleware(m ...middleware) {
+	r.config.appendGlobal(m...)
 }
 
 // MethodNotAllowed defines a handler to respond whenever a method is
