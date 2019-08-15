@@ -155,9 +155,9 @@ func (r *Rester) NotFound(h handler.Handler) {
 	r.config.notfound = httphandler(h, nil)
 }
 
-// UseGloablMiddleware appends the list of middlewares into the global
+// UseGlobalMiddleware appends the list of middlewares into the global
 // middleware stack to be put in front of every request emitted to the api
-func (r *Rester) UseGloablMiddleware(m ...middleware) {
+func (r *Rester) UseGlobalMiddleware(m ...middleware) {
 	r.config.appendGlobal(m...)
 }
 
