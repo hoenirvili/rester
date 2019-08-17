@@ -146,3 +146,9 @@ func BadRequest(message string) *Response {
 func Unauthorized(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusUnauthorized}
 }
+
+// PreconditionFailed creates a Response from a message that can be used
+// to respond with http PreconditionFailed
+func PreconditionFailed(message string) *Response {
+	return &Response{Error: Error(message), StatusCode: http.StatusPreconditionFailed}
+}
