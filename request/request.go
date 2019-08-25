@@ -53,3 +53,11 @@ func (r Request) URLParam(key string, t value.Type) value.Value {
 	input := chi.URLParam(r.Request, key)
 	return value.Parse(input, t)
 }
+
+func (r Request) ID() (uint64, error) {
+	value := r.URLParam("id", value.Uint64)
+	if err := value.Error(); err != nil {
+		return 0, err
+	}
+	return value.Uint64(), nil
+}
