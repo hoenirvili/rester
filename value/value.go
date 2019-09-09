@@ -5,6 +5,7 @@ package value
 import (
 	"errors"
 	"strconv"
+	"time"
 )
 
 type Type uint8
@@ -14,7 +15,10 @@ const (
 	Int
 	Int64
 	Uint64
+	Date // for parsing simple date of the form 2006-01-02
 )
+
+const formatTime = "2006-01-02"
 
 func Parse(input string, t Type) Value {
 	if input == "" {
@@ -45,6 +49,13 @@ func Parse(input string, t Type) Value {
 				`cannot parse the given input "` + input + `" into Uint64`)
 		}
 		return Value{n, err}
+	case Date:
+		t, err := time.Parse(formatTime, input)
+		if err != nil {
+			err = errors.New(
+				`cannot parse the given input "` + input + `" into a time.Time`)
+		}
+		return Value{t, err}
 	default:
 		return Value{nil, errors.New("unsupported type")}
 	}
@@ -64,6 +75,7 @@ func (v Value) String() string {
 	}
 	return str
 }
-func (v Value) Int64() int64   { return v.raw.(int64) }
-func (v Value) Int() int       { return v.raw.(int) }
-func (v Value) Uint64() uint64 { return v.raw.(uint64) }
+func (v Value) Int64() int64    { return v.raw.(int64) }
+func (v Value) Int() int        { return v.raw.(int) }
+func (v Value) Uint64() uint64  { return v.raw.(uint64) }
+func (v Value) Date() time.Time { return v.raw.(time.Time) }
