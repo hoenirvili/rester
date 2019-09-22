@@ -109,6 +109,17 @@ func Payload(payload interface{}) *Response {
 	}
 }
 
+// Created returns a response containing the given payload
+// and setting the status code to 201 indicating that the user
+// created a resource
+func Created(payload interface{}) *Response {
+	return &Response{
+		StatusCode: http.StatusCreated,
+		Payload:    payload,
+		permission: permission.NoPermission,
+	}
+}
+
 // Headers returns http with status 200 response
 // that is populated with a key, value pair header
 func Header(key, value string) *Response {

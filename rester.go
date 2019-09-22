@@ -82,7 +82,7 @@ func (r *Rester) appendTokenMiddleware() {
 
 			p, ok := claims["permissions"]
 			if !ok {
-				resp := response.Unauthorized(err.Error())
+				resp := response.Unauthorized("No 'permissions' key found in the token")
 				resp.Render(w)
 				return
 			}
