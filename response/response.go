@@ -139,9 +139,15 @@ func Header(key, value string) *Response {
 }
 
 // InternalError creates a Response from a message
-// that can be used to respond with InternalErrors
+// that can be used to respond with StatusInternalServerError
 func InternalError(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusInternalServerError}
+}
+
+// Forbidden creates a Response from a message that
+// can be used to respond with StatusForbidden
+func Forbidden(message string) *Response {
+	return &Response{Error: Error(message), StatusCode: http.StatusForbidden}
 }
 
 // NotFound creates a Response from a message

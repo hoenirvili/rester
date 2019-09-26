@@ -274,7 +274,7 @@ type makeHandlerConfig struct {
 func makeHandler(c makeHandlerConfig) handler.Handler {
 	return handler.Handler(func(req request.Request) resource.Response {
 		if err := c.isRequestAllowed(c.route.Allow, req); err != nil {
-			return response.Unauthorized(err.Error())
+			return response.Forbidden(err.Error())
 		}
 		values := req.URL.Query()
 		pairs := req.Pairs()
