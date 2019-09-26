@@ -13,8 +13,6 @@ import (
 // Error type used for defining json response errors
 type Error string
 
-const EmptyError Error = ""
-
 // MarshalJSON marshals the error into a json
 func (e Error) MarshalJSON() ([]byte, error) {
 	str := string(e)
@@ -39,16 +37,20 @@ type Response struct {
 	permission permission.Permissions
 }
 
+// WithPermission returns a response that will be send back to the client
+// based on the given permission
 func WithPermission(payload interface{}, p permission.Permissions) *Response {
 	return &Response{Payload: payload, permission: p}
 }
+
+const emptyError Error = ""
 
 // Render writes the hole json response into the given http.ResponseWriter
 func (r *Response) Render(w http.ResponseWriter) {
 	var payload interface{}
 
 	switch {
-	case r.Error != EmptyError:
+	case r.Error != emptyError:
 		payload = r.Error
 		if r.StatusCode == 0 {
 			r.StatusCode = http.StatusInternalServerError
@@ -84,10 +86,15 @@ func (r *Response) Render(w http.ResponseWriter) {
 		}
 	}
 	w.WriteHeader(r.StatusCode)
+	// TODO(hoenir): if the response contains a payload that cannot be marshaled
+	// should we at least capture the error and return it to the client somehow?
 	json.NewEncoder(w).Encode(payload)
 }
 
+// Payloader defines a way to send back response payloads that
+// can be filtered using the default permission scheme
 type Payloader interface {
+	// Payload returns the payload based on the permission given
 	Payload(p permission.Permissions) interface{}
 }
 
@@ -96,6 +103,9 @@ func Ok() *Response {
 	return &Response{StatusCode: http.StatusOK}
 }
 
+// Err returns a response that contains an internal logic error
+// The error will be transformed to JSON and returned to the client
+// with the http status code set to http.StatusInternalError
 func Err(msg string) *Response {
 	return &Response{Error: Error(msg)}
 }
