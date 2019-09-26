@@ -20,11 +20,11 @@ func (r Request) Pairs() query.Pairs {
 	return r.pairs
 }
 
-func New(r *http.Request, pairs query.Pairs) Request {
+func New(r *http.Request, pairs query.Pairs) *Request {
 	if pairs == nil {
 		pairs = make(query.Pairs)
 	}
-	return Request{r, pairs}
+	return &Request{r, pairs}
 }
 
 func (r *Request) Permission() permission.Permissions {

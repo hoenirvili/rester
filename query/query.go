@@ -9,6 +9,7 @@ import (
 	"github.com/hoenirvili/rester/value"
 )
 
+// Value type holds information about query values in url paramas
 type Value struct {
 	// Type is the type of value of the query param
 	Type value.Type

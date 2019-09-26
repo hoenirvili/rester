@@ -193,7 +193,6 @@ func (r *Rester) validRoute(route route.Route) {
 	if route.Handler == nil {
 		panic("Cannot use a nil handler")
 	}
-
 	if route.URL == "" {
 		panic("Cannot use an empty URL route")
 	}
@@ -245,7 +244,10 @@ func (r *Rester) Build() {
 	})
 }
 
-func allowAllRequests(permission.Permissions, request.Request) error {
+func allowAllRequests(
+	permission.Permissions,
+	request.Request,
+) error {
 	return nil
 }
 
@@ -256,13 +258,11 @@ func (r *Rester) decideWhichPermissionFunction(
 	if p == permission.Anonymous {
 		return fn
 	}
-
 	// if we did specify a token validation schema, proceed with checking
 	// the permission return by the validation process in the context
 	if r.options.validator != nil {
 		fn = checkPermission
 	}
-
 	return fn
 }
 
@@ -288,6 +288,7 @@ func makeHandler(c makeHandlerConfig) handler.Handler {
 		return c.route.Handler(req)
 	})
 }
+
 func (r *Rester) resource(g chi.Router, base string, res Resource) {
 	g.Route(base, func(router chi.Router) {
 		routes := res.Routes()
