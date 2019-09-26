@@ -4,7 +4,6 @@ package query
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/hoenirvili/rester/value"
@@ -30,7 +29,7 @@ type Pairs map[string]Value
 func (p Pairs) panicCheckKey(key string) {
 	_, ok := p[key]
 	if !ok {
-		panic("key " + key + " does not exist in map of query pairs")
+		panic("Key " + key + " does not exist in map of query pairs")
 	}
 }
 
@@ -38,7 +37,7 @@ func (p Pairs) Parse(key string, values url.Values) error {
 	p.panicCheckKey(key)
 
 	if len(values) == 0 {
-		return errors.New("cannot parse an empty url query map")
+		return errors.New("Cannot parse an empty url query map")
 	}
 
 	queryValue := values[key]
@@ -47,7 +46,6 @@ func (p Pairs) Parse(key string, values url.Values) error {
 		return errors.New("Cannot parse an empty url query values map")
 	case 1:
 		value := value.Parse(queryValue[0], p[key].Type)
-		fmt.Println(value)
 		return value.Error()
 	default:
 		//TODO(hoenir): Maybe add this functionalty in the future

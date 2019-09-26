@@ -3,7 +3,6 @@ package token
 import (
 	"encoding/json"
 	"errors"
-	"reflect"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -25,7 +24,7 @@ func (c *Claims) VerifyPermissions() error {
 	}
 	v := permission.Permissions(p.(float64))
 	if !v.Valid() {
-		return errors.New("Invalid permissions value, value not supported")
+		return errors.New("Invalid permissions value, value is not supported")
 	}
 	return nil
 }
@@ -33,7 +32,7 @@ func (c *Claims) VerifyPermissions() error {
 func (c *Claims) VerifyExp() error {
 	_, ok := c.mapClaims["exp"]
 	if !ok {
-		return errors.New("Jwt token exp field not present")
+		return errors.New("No exp found in the jwt token")
 	}
 	return nil
 }
@@ -54,16 +53,10 @@ func (c *Claims) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if err := c.VerifyPermissions(); err != nil {
-		return &json.UnsupportedValueError{
-			Value: reflect.ValueOf(c.mapClaims["permissions"]),
-			Str:   err.Error(),
-		}
+		return err
 	}
 	if err := c.VerifyExp(); err != nil {
-		return &json.UnsupportedValueError{
-			Value: reflect.ValueOf(c.mapClaims["exp"]),
-			Str:   err.Error(),
-		}
+		return err
 	}
 	return nil
 }
