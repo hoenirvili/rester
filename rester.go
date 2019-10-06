@@ -347,8 +347,8 @@ func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
 		panic("no handler given for the route")
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		request := request.New(r, pairs)
-		response := h(request)
+		req := request.New(r, pairs)
+		response := h(req)
 		response.Render(w)
 	})
 }

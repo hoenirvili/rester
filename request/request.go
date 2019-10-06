@@ -20,14 +20,14 @@ func (r Request) Pairs() query.Pairs {
 	return r.pairs
 }
 
-func New(r *http.Request, pairs query.Pairs) *Request {
+func New(r *http.Request, pairs query.Pairs) Request {
 	if pairs == nil {
 		pairs = make(query.Pairs)
 	}
-	return &Request{r, pairs}
+	return Request{r, pairs}
 }
 
-func (r *Request) Permission() permission.Permissions {
+func (r Request) Permission() permission.Permissions {
 	value := r.Context().Value("permissions")
 	if value == nil {
 		return permission.NoPermission
@@ -35,7 +35,7 @@ func (r *Request) Permission() permission.Permissions {
 	return value.(permission.Permissions)
 }
 
-func (r *Request) Query(key string) value.Value {
+func (r Request) Query(key string) value.Value {
 	input := ""
 	v, ok := r.URL.Query()[key]
 	if ok {
@@ -44,7 +44,7 @@ func (r *Request) Query(key string) value.Value {
 	return value.Parse(input, r.pairs[key].Type)
 }
 
-func (r *Request) JSON(p interface{}) error {
+func (r Request) JSON(p interface{}) error {
 	defer r.Request.Body.Close()
 	return json.NewDecoder(r.Request.Body).Decode(p)
 }
