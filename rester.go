@@ -29,6 +29,7 @@ type config struct {
 		validator middleware
 	}
 	resources map[string]Resource
+	origins   []string
 }
 
 func (c *config) setValidator(m middleware) {
@@ -237,6 +238,7 @@ func (r *Rester) Build() {
 				// global middlewares
 				router.Use(middleware)
 			}
+
 			for path, resource := range r.config.resources {
 				r.resource(router, path, resource)
 			}
@@ -244,12 +246,16 @@ func (r *Rester) Build() {
 	})
 }
 
-func allowAllRequests(
-	permission.Permissions,
-	request.Request,
-) error {
-	return nil
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+	})
 }
+
+func allowAllRequests(permission.Permissions, request.Request) error { return nil }
 
 func (r *Rester) decideWhichPermissionFunction(
 	p permission.Permissions,
@@ -302,6 +308,35 @@ func (r *Rester) resource(g chi.Router, base string, res Resource) {
 				route:            route,
 			})
 			r.method(router, route, h)
+
+			var handle http.Handler
+			switch {
+			case r.config.origins != nil:
+				if route.Method == "OPTIONS" {
+					continue
+				}
+				handle = enableCors(r.config.origins)
+			case r.config.origins == nil:
+				handle = http.HandlerFunc(enableAllCors)
+			}
+			router.Method(http.MethodOptions, route.URL, handle)
+		}
+	})
+}
+
+func enableAllCors(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+func enableCors(origins []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		o := r.Header.Get("Origin")
+		for _, origin := range origins {
+			if o == origin {
+				w.Header().Set("Access-Control-Allow-Origin", o)
+				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			}
 		}
 	})
 }
@@ -340,6 +375,13 @@ func (r *Rester) Resource(base string, resource Resource) {
 		panic("cannot append the same resource " + base + "twice")
 	}
 	r.config.resources[base] = resource
+}
+
+// Cors appends a list of origins that are allowed to make a request to the server
+// By default this all preflight requests and other things are
+// Access-Control-Allow-Origin *
+func (r *Rester) Cors(origins ...string) {
+	r.config.origins = origins
 }
 
 func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
