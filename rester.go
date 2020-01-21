@@ -262,6 +262,7 @@ func (r *Rester) corsMiddleware(next http.Handler) http.Handler {
 		default:
 			w.Header().Set("Access-Control-Allow-Origin", origins)
 		}
+		next.ServeHTTP(w, r)
 	})
 }
 
