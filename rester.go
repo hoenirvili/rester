@@ -239,6 +239,8 @@ func (r *Rester) Build() {
 				router.Use(middleware)
 			}
 
+			router.Use(r.corsMiddleware)
+
 			for path, resource := range r.config.resources {
 				r.resource(router, path, resource)
 			}
@@ -246,11 +248,19 @@ func (r *Rester) Build() {
 	})
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
+func (r *Rester) corsMiddleware(next http.Handler) http.Handler {
+	origins := strings.Join(r.config.origins, ",")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
 			next.ServeHTTP(w, r)
 			return
+		}
+
+		switch origins {
+		case "":
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		default:
+			w.Header().Set("Access-Control-Allow-Origin", origins)
 		}
 	})
 }
@@ -331,13 +341,22 @@ func enableAllCors(w http.ResponseWriter, r *http.Request) {
 func enableCors(origins []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		o := r.Header.Get("Origin")
+		if o == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		for _, origin := range origins {
 			if o == origin {
-				w.Header().Set("Access-Control-Allow-Origin", o)
-				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+				header := w.Header()
+				header.Set("Access-Control-Allow-Origin", o)
+				header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+				header.Set("Access-Control-Allow-Headers", "Content-Type")
+				w.WriteHeader(http.StatusOK)
+				return
 			}
 		}
+		// TODO(hoenir): respond with 405?
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
 }
 
