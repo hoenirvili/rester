@@ -350,8 +350,8 @@ func enableCors(origins []string) http.Handler {
 			if o == origin {
 				header := w.Header()
 				header.Set("Access-Control-Allow-Origin", o)
-				header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-				header.Set("Access-Control-Allow-Headers", "Content-Type")
+				header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
+				header.Set("Access-Control-Allow-Headers", "content-type")
 				w.WriteHeader(http.StatusOK)
 				return
 			}
