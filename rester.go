@@ -356,7 +356,6 @@ func enableCors(origins []string) http.Handler {
 				return
 			}
 		}
-		// TODO(hoenir): respond with 405?
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
 }
