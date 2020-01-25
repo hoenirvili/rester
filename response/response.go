@@ -130,12 +130,28 @@ func Created(payload interface{}) *Response {
 	}
 }
 
-// Headers returns http with status 200 response
+// Header returns http with status 200 response
 // that is populated with a key, value pair header
 func Header(key, value string) *Response {
 	headers := make(http.Header)
 	headers.Set(key, value)
 	return &Response{StatusCode: http.StatusOK, Headers: headers}
+}
+
+type KeyValue struct {
+	Key   string
+	Value string
+}
+
+// Headers returns http with status 200 response
+// that is populated with key, value pair headers
+func Headers(headers []KeyValue) *Response {
+	h := make(http.Header)
+	for _, v := range headers {
+		h.Set(v.Key, v.Value)
+	}
+	return &Response{StatusCode: http.StatusOK, Headers: h}
+
 }
 
 // InternalError creates a Response from a message
