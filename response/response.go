@@ -29,11 +29,20 @@ func (e Error) MarshalJSON() ([]byte, error) {
 // Response holds all response information
 // for responding with an valid rest response
 type Response struct {
-	Error      Error
-	Payload    interface{}
+	// Error is set when you want to respond
+	// to the caller with an http json error
+	// like {"error": "message"}
+	Error Error
+	// Payload holds the raw ptr to a type that can be
+	// marshaled to json
+	// All the marshaling process is done with the standard
+	// library encoding/json
+	Payload interface{}
+	// StatusCode is set when you want
+	// to respond with a different status code than 200
 	StatusCode int
+	// Headers holds a list of headers that the response should contain
 	Headers    http.Header
-
 	permission permission.Permissions
 }
 

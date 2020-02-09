@@ -239,7 +239,8 @@ func (r *Rester) Build() {
 				router.Use(middleware)
 			}
 
-			router.Use(r.corsMiddleware)
+			//TODO(hoenir): use chi cors
+			// router.Use(r.corsMiddleware)
 
 			for path, resource := range r.config.resources {
 				r.resource(router, path, resource)
@@ -248,23 +249,23 @@ func (r *Rester) Build() {
 	})
 }
 
-func (r *Rester) corsMiddleware(next http.Handler) http.Handler {
-	origins := strings.Join(r.config.origins, ",")
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		switch origins {
-		case "":
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-		default:
-			w.Header().Set("Access-Control-Allow-Origin", origins)
-		}
-		next.ServeHTTP(w, r)
-	})
-}
+// func (r *Rester) corsMiddleware(next http.Handler) http.Handler {
+// 	origins := strings.Join(r.config.origins, ",")
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if r.Method == http.MethodOptions {
+// 			next.ServeHTTP(w, r)
+// 			return
+// 		}
+//
+// 		switch origins {
+// 		case "":
+// 			w.Header().Set("Access-Control-Allow-Origin", "*")
+// 		default:
+// 			w.Header().Set("Access-Control-Allow-Origin", origins)
+// 		}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 func allowAllRequests(permission.Permissions, request.Request) error { return nil }
 
@@ -320,71 +321,59 @@ func (r *Rester) resource(g chi.Router, base string, res Resource) {
 			})
 			r.method(router, route, h)
 
-			var handle http.Handler
-			switch {
-			case r.config.origins != nil:
-				if route.Method == "OPTIONS" {
-					continue
-				}
-				handle = enableCors(r.config.origins)
-			case r.config.origins == nil:
-				handle = http.HandlerFunc(enableAllCors)
-			}
-			router.Method(http.MethodOptions, route.URL, handle)
+			// var handle http.Handler
+			// switch {
+			// case r.config.origins != nil:
+			// 	if route.Method == "OPTIONS" {
+			// 		continue
+			// 	}
+			// 	handle = enableCors(r.config.origins)
+			// case r.config.origins == nil:
+			// 	handle = http.HandlerFunc(enableAllCors)
+			// }
+			//router.Method(http.MethodOptions, route.URL, handle)
 		}
 	})
 }
 
-func enableAllCors(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-}
-
-func enableCors(origins []string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		o := r.Header.Get("Origin")
-		if o == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		for _, origin := range origins {
-			if o == origin {
-				header := w.Header()
-				header.Set("Access-Control-Allow-Origin", o)
-				header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
-				header.Set("Access-Control-Allow-Headers", "content-type")
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-		}
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	})
-}
+// func enableAllCors(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Access-Control-Allow-Origin", "*")
+// }
+//
+// func enableCors(origins []string) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		o := r.Header.Get("Origin")
+// 		if o == "" {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			return
+// 		}
+// 		for _, origin := range origins {
+// 			if o == origin {
+// 				header := w.Header()
+// 				header.Set("Access-Control-Allow-Origin", o)
+// 				header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
+// 				header.Set("Access-Control-Allow-Headers", "content-type")
+// 				w.WriteHeader(http.StatusOK)
+// 				return
+// 			}
+// 		}
+// 		w.WriteHeader(http.StatusMethodNotAllowed)
+// 	})
+// }
 
 func (r *Rester) method(router chi.Router, route route.Route, h handler.Handler) {
 	switch route.Allow {
 	case permission.Anonymous:
-		router.With(route.Middlewares...).MethodFunc(
-			route.Method,
-			route.URL,
-			httphandler(h, route.QueryPairs),
-		)
+		router.With(route.Middlewares...).MethodFunc(route.Method, route.URL, httphandler(h, route.QueryPairs))
 		return
 	default:
 		if r.options.validator != nil {
 			router.With(r.config.middleware.validator).
 				With(route.Middlewares...).
-				MethodFunc(
-					route.Method,
-					route.URL,
-					httphandler(h, route.QueryPairs),
-				)
+				MethodFunc(route.Method, route.URL, httphandler(h, route.QueryPairs))
 			return
 		}
-		router.With(route.Middlewares...).MethodFunc(
-			route.Method,
-			route.URL,
-			httphandler(h, route.QueryPairs),
-		)
+		router.With(route.Middlewares...).MethodFunc(route.Method, route.URL, httphandler(h, route.QueryPairs))
 	}
 }
 
