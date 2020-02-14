@@ -53,7 +53,6 @@ type middleware func(http.Handler) http.Handler
 // to serve incoming  http rest request
 func New(opts ...Option) *Rester {
 	options := Options{
-		// TODO(hoenir): maybe add more default settings
 		corsOptions: defaultCors,
 	}
 	for _, setter := range opts {
@@ -140,12 +139,11 @@ func WithCustomCors(options cors.Options) Option {
 }
 
 var defaultCors = cors.Options{
-	AllowedOrigins:   []string{"*"},
-	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-	AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-	ExposedHeaders:   []string{"Link"}, // TODO: maybe remove this
-	AllowCredentials: true,
-	MaxAge:           300, // Maximum value not ignored by any of major browsers
+	AllowedOrigins: []string{"*"},
+	AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
+	ExposedHeaders: []string{"Link"}, // TODO: maybe remove this
+	MaxAge:         300,              // Maximum value not ignored by any of major browsers
 }
 
 // TokenValidator defines ways of interactions with the token
