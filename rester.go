@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/cors"
 
 	"github.com/hoenirvili/rester/handler"
 	"github.com/hoenirvili/rester/permission"
@@ -29,7 +30,6 @@ type config struct {
 		validator middleware
 	}
 	resources map[string]Resource
-	origins   []string
 }
 
 func (c *config) setValidator(m middleware) {
@@ -52,7 +52,10 @@ type middleware func(http.Handler) http.Handler
 // New returns a new Rester http.Handler compatible that's ready
 // to serve incoming  http rest request
 func New(opts ...Option) *Rester {
-	options := Options{}
+	options := Options{
+		// TODO(hoenir): maybe add more default settings
+		corsOptions: defaultCors,
+	}
 	for _, setter := range opts {
 		setter(&options)
 	}
@@ -112,12 +115,10 @@ func guard(in permission.Permissions, on permission.Permissions) bool {
 	return in&on != 0
 }
 
-// Option defines a setter callback type to set
-// an underlying option value
+// Option defines a setter callback type to set an underlying option value
 type Option func(opt *Options)
 
-// Options type holding all underlying options for the
-// rester api
+// Options type holding all underlying options for the rester api
 type Options struct {
 	// validator used for token validation and extraction
 	validator TokenValidator
@@ -128,6 +129,23 @@ type Options struct {
 	// global middlwares holds a list of middlewares that will
 	// be used in front of all routes
 	globalMiddlewares middleware
+
+	// corsOptions holds a series of options for setting up cors
+	corsOptions cors.Options
+}
+
+// WithCustomCors set's a custom set of cors for the server
+func WithCustomCors(options cors.Options) Option {
+	return func(opts *Options) { opts.corsOptions = options }
+}
+
+var defaultCors = cors.Options{
+	AllowedOrigins:   []string{"*"},
+	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+	ExposedHeaders:   []string{"Link"}, // TODO: maybe remove this
+	AllowCredentials: true,
+	MaxAge:           300, // Maximum value not ignored by any of major browsers
 }
 
 // TokenValidator defines ways of interactions with the token
@@ -235,12 +253,10 @@ func (r *Rester) Build() {
 			router.NotFound(r.config.notfound)
 			router.MethodNotAllowed(r.config.methodnotallowed)
 			for _, middleware := range r.config.middleware.global {
-				// global middlewares
 				router.Use(middleware)
 			}
 
-			//TODO(hoenir): use chi cors
-			// router.Use(r.corsMiddleware)
+			router.Use(cors.New(r.options.corsOptions).Handler)
 
 			for path, resource := range r.config.resources {
 				r.resource(router, path, resource)
@@ -249,29 +265,9 @@ func (r *Rester) Build() {
 	})
 }
 
-// func (r *Rester) corsMiddleware(next http.Handler) http.Handler {
-// 	origins := strings.Join(r.config.origins, ",")
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if r.Method == http.MethodOptions {
-// 			next.ServeHTTP(w, r)
-// 			return
-// 		}
-//
-// 		switch origins {
-// 		case "":
-// 			w.Header().Set("Access-Control-Allow-Origin", "*")
-// 		default:
-// 			w.Header().Set("Access-Control-Allow-Origin", origins)
-// 		}
-// 		next.ServeHTTP(w, r)
-// 	})
-// }
-
 func allowAllRequests(permission.Permissions, request.Request) error { return nil }
 
-func (r *Rester) decideWhichPermissionFunction(
-	p permission.Permissions,
-) func(permission.Permissions, request.Request) error {
+func (r *Rester) decideWhichPermissionFunction(p permission.Permissions) func(permission.Permissions, request.Request) error {
 	fn := allowAllRequests
 	if p == permission.Anonymous {
 		return fn
@@ -320,46 +316,9 @@ func (r *Rester) resource(g chi.Router, base string, res Resource) {
 				route:            route,
 			})
 			r.method(router, route, h)
-
-			// var handle http.Handler
-			// switch {
-			// case r.config.origins != nil:
-			// 	if route.Method == "OPTIONS" {
-			// 		continue
-			// 	}
-			// 	handle = enableCors(r.config.origins)
-			// case r.config.origins == nil:
-			// 	handle = http.HandlerFunc(enableAllCors)
-			// }
-			//router.Method(http.MethodOptions, route.URL, handle)
 		}
 	})
 }
-
-// func enableAllCors(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Access-Control-Allow-Origin", "*")
-// }
-//
-// func enableCors(origins []string) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		o := r.Header.Get("Origin")
-// 		if o == "" {
-// 			w.WriteHeader(http.StatusBadRequest)
-// 			return
-// 		}
-// 		for _, origin := range origins {
-// 			if o == origin {
-// 				header := w.Header()
-// 				header.Set("Access-Control-Allow-Origin", o)
-// 				header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
-// 				header.Set("Access-Control-Allow-Headers", "content-type")
-// 				w.WriteHeader(http.StatusOK)
-// 				return
-// 			}
-// 		}
-// 		w.WriteHeader(http.StatusMethodNotAllowed)
-// 	})
-// }
 
 func (r *Rester) method(router chi.Router, route route.Route, h handler.Handler) {
 	switch route.Allow {
@@ -383,13 +342,6 @@ func (r *Rester) Resource(base string, resource Resource) {
 		panic("cannot append the same resource " + base + "twice")
 	}
 	r.config.resources[base] = resource
-}
-
-// Cors appends a list of origins that are allowed to make a request to the server
-// By default this all preflight requests and other things are
-// Access-Control-Allow-Origin *
-func (r *Rester) Cors(origins ...string) {
-	r.config.origins = origins
 }
 
 func httphandler(h handler.Handler, pairs query.Pairs) http.HandlerFunc {
