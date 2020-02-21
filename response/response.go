@@ -193,6 +193,11 @@ func BadRequest(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusBadRequest}
 }
 
+// Conflict creates a Response from a message that can be used to respond with http Conflict
+func Conflict(message string) *Response {
+	return &Response{Error: Error(message), StatusCode: http.StatusConflict}
+}
+
 // Unauthorized creates a Response from a message that can be used to respond with
 // http Unauthorized
 func Unauthorized(message string) *Response {
