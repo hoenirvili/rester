@@ -4,6 +4,7 @@ package response
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -167,6 +168,14 @@ func Headers(headers []KeyValue) *Response {
 // that can be used to respond with StatusInternalServerError
 func InternalError(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusInternalServerError}
+}
+
+// InternalErrorf creates a formated Response that can be used to respond with StatusInternalServerError
+func InternalErrorf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusInternalServerError,
+	}
 }
 
 // Forbidden creates a Response from a message that
