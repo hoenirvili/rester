@@ -184,10 +184,26 @@ func Forbidden(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusForbidden}
 }
 
+// Forbiddenf creates a formated Response that can be used to respond with StatusForbidden
+func Forbiddenf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusForbidden,
+	}
+}
+
 // NotFound creates a Response from a message
 // that can be used to respond with http NotFound
 func NotFound(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusNotFound}
+}
+
+// NotFoundf creates a formated Response that can be used to respond with StatusNotFound
+func NotFoundf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusNotFound,
+	}
 }
 
 // MethodNotAllowed creates a Response from a message that can be used to respond with
@@ -196,10 +212,26 @@ func MethodNotAllowed(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusMethodNotAllowed}
 }
 
+// MethodNotAllowedf creates a formated Response that can be used to respond with StatusMethodNotAllowed
+func MethodNotAllowedf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusMethodNotAllowed,
+	}
+}
+
 // BadRequest creates a Response from a message that can be used to respond with
 // http BadRequest
 func BadRequest(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusBadRequest}
+}
+
+// BadRequestf creates a formated Response that can be used to respond with StatusBadRequest
+func BadRequestf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusBadRequest,
+	}
 }
 
 // Conflict creates a Response from a message that can be used to respond with http Conflict
@@ -207,14 +239,37 @@ func Conflict(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusConflict}
 }
 
-// Unauthorized creates a Response from a message that can be used to respond with
-// http Unauthorized
+// Conflictf creates a formated Response that can be used to respond with StatusConflict
+func Conflictf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusConflict,
+	}
+}
+
+// Unauthorized creates a Response from a message that can be used to respond with http Unauthorized
 func Unauthorized(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusUnauthorized}
+}
+
+// Unauthorizedf creates a formated Response that can be used to respond with StatusUnauthorized
+func Unauthorizedf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusUnauthorized,
+	}
 }
 
 // PreconditionFailed creates a Response from a message that can be used
 // to respond with http PreconditionFailed
 func PreconditionFailed(message string) *Response {
 	return &Response{Error: Error(message), StatusCode: http.StatusPreconditionFailed}
+}
+
+// PreconditionFailedf creates a formated Response that can be used to respond with StatusPreconditionFailed
+func PreconditionFailedf(format string, args ...interface{}) *Response {
+	return &Response{
+		Error:      Error(fmt.Sprintf(format, args...)),
+		StatusCode: http.StatusPreconditionFailed,
+	}
 }
