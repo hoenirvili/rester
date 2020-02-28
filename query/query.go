@@ -38,18 +38,18 @@ func (p Pairs) Parse(key string, values url.Values) error {
 	p.panicCheckKey(key)
 
 	if len(values) == 0 {
-		return errors.New("Cannot parse an empty url query map")
+		return errors.New("cannot parse an empty url query map")
 	}
 
 	queryValue := values[key]
 	switch len(queryValue) {
 	case 0:
-		return errors.New("Cannot parse an empty url query values map")
+		return errors.New("cannot parse an empty url query values map")
 	case 1:
 		value := value.Parse(queryValue[0], p[key].Type)
 		return value.Error()
 	default:
 		//TODO(hoenir): Maybe add this functionalty in the future
-		return errors.New("Not implemented, cannot parse arrays")
+		return errors.New("not implemented, cannot parse arrays")
 	}
 }

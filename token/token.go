@@ -32,7 +32,7 @@ func (j *JWT) Verify(r *http.Request) (map[string]interface{}, error) {
 		return nil, err
 	}
 	if !t.Valid {
-		return nil, errors.New("Jwt token is not valid")
+		return nil, errors.New("jwt token is not valid")
 	}
 	return j.claims.mapClaims, nil
 }

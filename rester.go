@@ -201,7 +201,7 @@ type Resource interface {
 func checkPermission(allow permission.Permissions, req request.Request) error {
 	in := req.Request.Context().Value("permissions").(permission.Permissions)
 	if !guard(in, allow) {
-		return errors.New("You don't have permission to access this resource")
+		return errors.New("you don't have permission to access this resource")
 	}
 	return nil
 }

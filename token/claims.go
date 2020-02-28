@@ -20,11 +20,11 @@ func NewClaims() *Claims {
 func (c *Claims) VerifyPermissions() error {
 	p, ok := c.mapClaims["permissions"]
 	if !ok {
-		return errors.New("No permission found in the jwt token")
+		return errors.New("no permission found in the jwt token")
 	}
 	v := permission.Permissions(p.(float64))
 	if !v.Valid() {
-		return errors.New("Invalid permissions value, value is not supported")
+		return errors.New("invalid permissions value, value is not supported")
 	}
 	return nil
 }
@@ -32,7 +32,7 @@ func (c *Claims) VerifyPermissions() error {
 func (c *Claims) VerifyExp() error {
 	_, ok := c.mapClaims["exp"]
 	if !ok {
-		return errors.New("No exp found in the jwt token")
+		return errors.New("no exp found in the jwt token")
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func (c *Claims) Valid() error {
 	now := time.Now().Unix()
 	if !c.mapClaims.VerifyExpiresAt(now, true) {
 		return &jwt.ValidationError{
-			Inner:  errors.New("Token is expired"),
+			Inner:  errors.New("token is expired"),
 			Errors: jwt.ValidationErrorExpired,
 		}
 	}

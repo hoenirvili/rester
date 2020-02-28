@@ -20,7 +20,7 @@ func (e Error) MarshalJSON() ([]byte, error) {
 	if str == "" {
 		return nil, &json.MarshalerError{
 			Type: reflect.TypeOf(e),
-			Err:  errors.New("Cannot marshal an empty error in response"),
+			Err:  errors.New("cannot marshal an empty error in response"),
 		}
 	}
 

@@ -49,7 +49,7 @@ func (r Request) Query(key string) value.Value {
 func (r Request) JSON(p interface{}) error {
 	defer r.Request.Body.Close()
 	if !strings.Contains(r.Header.Get("Content-Type"), "application/json") {
-		return errors.New("Invalid or no content type header, we only support application/json")
+		return errors.New("invalid content type header, we only support application/json")
 	}
 	return json.NewDecoder(r.Request.Body).Decode(p)
 }
