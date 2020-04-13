@@ -61,12 +61,15 @@ func (r *requestSuite) TestQuery() {
 	require.Equal(v.String(), "test")
 }
 
-type testJSON struct{ Test string }
+type testJSON struct {
+	Test string `json:"test"`
+}
 
 func (r *requestSuite) TestJSON() {
 	require := r.Require()
 	req := new(http.Request)
 	req.Body = ioutil.NopCloser(bytes.NewBufferString(`{"test":"test"}`))
+	req.Header = http.Header{"Content-Type": []string{"application/json"}}
 	rr := request.New(req, nil)
 	t := new(testJSON)
 	err := rr.JSON(t)
