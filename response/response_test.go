@@ -1,6 +1,7 @@
 package response_test
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -184,12 +185,14 @@ type jsonResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
-func (j *jsonResponse) Payload(p permission.Permissions) interface{} {
+var _ response.Payloader = (*jsonResponse)(nil)
+
+func (j *jsonResponse) Payload(p permission.Permissions) (interface{}, error) {
 	if p == permission.Admin {
 		j.Message = ""
-		return j
+		return j, nil
 	}
-	return j
+	return j, nil
 }
 
 func TestRenderWithPermissions(t *testing.T) {
@@ -198,5 +201,22 @@ func TestRenderWithPermissions(t *testing.T) {
 	w := newResponseWriter()
 	r.Render(w)
 	require.Equal(t, string(w.Data()), "{}\n")
+}
 
+type jsonPermissionError struct {
+	err error
+}
+
+func (j jsonPermissionError) Payload(p permission.Permissions) (interface{}, error) {
+	return nil, j.err
+}
+
+var _ response.Payloader = (*jsonPermissionError)(nil)
+
+func TestRenderWithPermissionsWithError(t *testing.T) {
+	payload := &jsonPermissionError{errors.New("test")}
+	r := response.WithPermission(payload, permission.Admin)
+	w := newResponseWriter()
+	r.Render(w)
+	require.Equal(t, string(w.Data()), "{\"error\":\"test\"}\n")
 }

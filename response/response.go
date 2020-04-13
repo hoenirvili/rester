@@ -57,7 +57,10 @@ const emptyError Error = ""
 
 // Render writes the hole json response into the given http.ResponseWriter
 func (r *Response) Render(w http.ResponseWriter) {
-	var payload interface{}
+	var (
+		payload interface{}
+		err     error
+	)
 
 	switch {
 	case r.Error != emptyError:
@@ -74,7 +77,10 @@ func (r *Response) Render(w http.ResponseWriter) {
 	}
 
 	if p, ok := payload.(Payloader); ok {
-		payload = p.Payload(r.permission)
+		payload, err = p.Payload(r.permission)
+		if err != nil {
+			payload = Error(err.Error())
+		}
 	}
 
 	header := w.Header()
@@ -105,7 +111,7 @@ func (r *Response) Render(w http.ResponseWriter) {
 // can be filtered using the default permission scheme
 type Payloader interface {
 	// Payload returns the payload based on the permission given
-	Payload(p permission.Permissions) interface{}
+	Payload(p permission.Permissions) (interface{}, error)
 }
 
 // Ok returns an empty status ok response
