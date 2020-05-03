@@ -279,3 +279,8 @@ func PreconditionFailedf(format string, args ...interface{}) *Response {
 		StatusCode: http.StatusPreconditionFailed,
 	}
 }
+
+// NoContent creates a Response with http.StatusNoContent
+func NoContent() *Response {
+	return &Response{StatusCode: http.StatusNoContent}
+}
