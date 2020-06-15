@@ -9,6 +9,8 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi"
@@ -243,17 +245,37 @@ func (r *Rester) Static(dir string) {
 
 func (r *Rester) StaticSpa(dir string) {
 	r.root.Group(func(g chi.Router) {
-		serveSpaFiles(g, "/", http.Dir(dir))
+		staticSpaFile(g, "/", dir)
 	})
+
 }
 
-func serveSpaFiles(r chi.Router, root string, dir http.Dir) {
-	fs := http.FileServer(dir)
-	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := os.Stat(root + r.RequestURI); os.IsNotExist(err) {
-			http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
+func staticSpaFile(r chi.Router, public string, static string) {
+	if strings.ContainsAny(public, "{}*") {
+		panic("FileServer does not permit URL parameters.")
+	}
+
+	root, _ := filepath.Abs(static)
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		panic("Static Documents Directory Not Found")
+	}
+
+	fs := http.StripPrefix(public, http.FileServer(http.Dir(root)))
+
+	if public != "/" && public[len(public)-1] != '/' {
+		r.Get(public, http.RedirectHandler(public+"/", 301).ServeHTTP)
+		public += "/"
+	}
+
+	// Register the Get request for the specified path, most likely /*
+	r.Get(public+"*", func(w http.ResponseWriter, r *http.Request) {
+		file := strings.Replace(r.RequestURI, public, "/", 1)
+		// if the requested resource was not found, pass the request to the client
+		if _, err := os.Stat(root + file); os.IsNotExist(err) {
+			http.ServeFile(w, r, path.Join(root, "index.html"))
 			return
 		}
+		// if the requested resource was found, serve it
 		fs.ServeHTTP(w, r)
 	})
 }
