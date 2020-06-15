@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/go-chi/chi"
@@ -237,6 +238,23 @@ func serveFiles(r chi.Router, path string, root http.FileSystem) {
 func (r *Rester) Static(dir string) {
 	r.root.Group(func(g chi.Router) {
 		serveFiles(g, "/", http.Dir(dir))
+	})
+}
+
+func (r *Rester) StaticSpa(dir string) {
+	r.root.Group(func(g chi.Router) {
+		serveSpaFiles(g, "/", http.Dir(dir))
+	})
+}
+
+func serveSpaFiles(r chi.Router, root string, dir http.Dir) {
+	fs := http.FileServer(dir)
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := os.Stat(root + r.RequestURI); os.IsNotExist(err) {
+			http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
+			return
+		}
+		fs.ServeHTTP(w, r)
 	})
 }
 
