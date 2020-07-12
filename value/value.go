@@ -20,9 +20,12 @@ const (
 
 const formatTime = "2006-01-02"
 
+// ErrNErrNoValueFound returned when the Parse methods is being called with an empty input
+var ErrNoValueFound = errors.New("No value found")
+
 func Parse(input string, t Type) Value {
 	if input == "" {
-		return Value{err: errors.New("no query value found")}
+		return Value{err: ErrNoValueFound}
 	}
 
 	switch t {
